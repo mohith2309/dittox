@@ -1,1 +1,110 @@
-IyBEaXR0b3gKCj4gRG9jdW1lbnQgcHJpbnRpbmcsIHNpbXBsaWZpZWQuIFVwbG9hZCB5b3VyIGZpbGVzLCBmaW5kIG5lYXJieSBwcmludCBzaG9wcyBvbiBhIG1hcCwgcGxhY2UgYW4gb3JkZXIsIGFuZCB0cmFjayBpdCB0byBwaWNrdXAg4oCUIGFsbCBmcm9tIHlvdXIgcGhvbmUuCgotLS0KCiMjIEZlYXR1cmVzCgojIyMgQ3VzdG9tZXIgQXBwCgotICoqRmlsZSBVcGxvYWQqKiDigJQgVXBsb2FkIFBERnMsIGltYWdlcywgYW5kIGRvY3VtZW50cyBkaXJlY3RseSBmcm9tIHlvdXIgZGV2aWNlIG9yIGNsb3VkIHN0b3JhZ2UKLSAqKk5lYXJieSBTaG9wIERpc2NvdmVyeSoqIOKAlCBCcm93c2UgYSBsaXZlIG1hcCBvZiBwcmludCBzaG9wcyBzb3J0ZWQgYnkgZGlzdGFuY2UgYW5kIHJhdGluZ3MKLSAqKk9yZGVyIFBsYWNlbWVudCoqIOKAlCBDb25maWd1cmUgcHJpbnQgc2V0dGluZ3MgKHBhZ2VzLCBjb3BpZXMsIGNvbG9yL0ImVywgYmluZGluZykgYW5kIHBsYWNlIG9yZGVycyBpbiBzZWNvbmRzCi0gKipSZWFsLVRpbWUgVHJhY2tpbmcqKiDigJQgRm9sbG93IHlvdXIgb3JkZXIgc3RhdHVzIGZyb20gc3VibWl0dGVkIOKGkiBwcmludGluZyDihpIgcmVhZHkgZm9yIHBpY2t1cAotICoqT3JkZXIgSGlzdG9yeSoqIOKAlCBWaWV3IHBhc3Qgb3JkZXJzLCByZW9yZGVyLCBhbmQgZG93bmxvYWQgcmVjZWlwdHMKCiMjIyBTdG9yZSBNb2RlIChQcmludCBTaG9wIE93bmVycykKCi0gKipMaXZlIE9yZGVyIERhc2hib2FyZCoqIOKAlCBTZWUgaW5jb21pbmcgb3JkZXJzIHRoZSBpbnN0YW50IHRoZXkgYXJyaXZlCi0gKipGYXN0IEFjdGlvbnMqKiDigJQgQWNjZXB0LCByZWplY3QsIG9yIG1hcmsgb3JkZXJzIGNvbXBsZXRlIHdpdGggYSBzaW5nbGUgdGFwCi0gKipCdWxrIFVwZGF0ZXMqKiDigJQgVXBkYXRlIG11bHRpcGxlIG9yZGVyIHN0YXR1c2VzIHNpbXVsdGFuZW91c2x5Ci0gKipQcmludC10by1QaWNrdXAgV29ya2Zsb3cqKiDigJQgR3VpZGVkIHF1ZXVlIG1hbmFnZW1lbnQgZnJvbSBwcmludCBzdGFydCB0byBjdXN0b21lciBjb2xsZWN0aW9uCi0gKipSZXZlbnVlIFRyYWNraW5nKiog4oCUIERhaWx5IGFuZCB3ZWVrbHkgb3JkZXIgc3VtbWFyaWVzCgotLS0KCiMjIFRlY2ggU3RhY2sKCnwgTGF5ZXIgfCBUZWNobm9sb2d5IHwKfC0tLXwtLS18CnwgTW9iaWxlIEFwcCB8IEZsdXR0ZXIgKERhcnQpIHwKfCBBdXRoZW50aWNhdGlvbiB8IEZpcmViYXNlIEF1dGggfAp8IERhdGFiYXNlIHwgQ2xvdWQgRmlyZXN0b3JlIHwKfCBGaWxlIFN0b3JhZ2UgfCBGaXJlYmFzZSBDbG91ZCBTdG9yYWdlIHwKfCBQdXNoIE5vdGlmaWNhdGlvbnMgfCBGaXJlYmFzZSBDbG91ZCBNZXNzYWdpbmcgKEZDTSkgfAp8IE1hcHMgJiBMb2NhdGlvbiB8IEdvb2dsZSBNYXBzIEFQSSB8CnwgU3RhdGUgTWFuYWdlbWVudCB8IFByb3ZpZGVyIC8gUml2ZXJwb2QgfAp8IENJL0NEIHwgR2l0SHViIEFjdGlvbnMgfAoKLS0tCgojIyBHZXR0aW5nIFN0YXJ0ZWQKCiMjIyBQcmVyZXF1aXNpdGVzCgotIEZsdXR0ZXIgMy54KwotIERhcnQgMy54KwotIEZpcmViYXNlIHByb2plY3QgY29uZmlndXJlZCBmb3IgQW5kcm9pZCAmIGlPUwotIEdvb2dsZSBNYXBzIEFQSSBrZXkKCiMjIyBTZXR1cAoKYGBgYmFzaApnaXQgY2xvbmUgaHR0cHM6Ly9naXRodWIuY29tL21vaGl0aDIzMDkvZGl0dG94LmdpdApjZCBkaXR0b3gKZmx1dHRlciBwdWIgZ2V0CmBgYAoKQWRkIHlvdXIgRmlyZWJhc2UgY29uZmlnIGZpbGVzIHRvIHRoZSByZXNwZWN0aXZlIHBsYXRmb3JtIGZvbGRlcnM6Ci0gYGFuZHJvaWQvYXBwL2dvb2dsZS1zZXJ2aWNlcy5qc29uYAotIGBpb3MvUnVubmVyL0dvb2dsZVNlcnZpY2UtSW5mby5wbGlzdGAKCkNyZWF0ZSBhIGAuZW52YCBmaWxlIGF0IHRoZSBwcm9qZWN0IHJvb3Q6CgpgYGBlbnYKR09PR0xFX01BUFNfQVBJX0tFWT15b3VyX2tleV9oZXJlCmBgYAoKIyMjIFJ1bgoKYGBgYmFzaApmbHV0dGVyIHJ1bgpgYGAKCiMjIyBCdWlsZCBBUEsKCmBgYGJhc2gKZmx1dHRlciBidWlsZCBhcGsgLS1yZWxlYXNlCmBgYAoKLS0tCgojIyBQcm9qZWN0IFN0cnVjdHVyZQoKYGBgCmxpYi8K4pSc4pSA4pSAIG1haW4uZGFydArilJzilIDilIAgbW9kZWxzLyAgICAgICAgICAgIyBPcmRlciwgU2hvcCwgVXNlciBkYXRhIG1vZGVscwrilJzilIDilIAgc2NyZWVucy8K4pSCICAg4pSc4pSA4pSAIGN1c3RvbWVyLyAgICAgIyBGaWxlIHVwbG9hZCwgbWFwLCBvcmRlciBmbG93IHNjcmVlbnMK4pSCICAg4pSU4pSA4pSAIHN0b3JlLyAgICAgICAgIyBPd25lciBkYXNoYm9hcmQgYW5kIG9yZGVyIG1hbmFnZW1lbnQK4pSc4pSA4pSAIHNlcnZpY2VzLyAgICAgICAgICMgRmlyZWJhc2UsIE1hcHMsIGZpbGUgaGFuZGxpbmcgc2VydmljZXMK4pSU4pSA4pSAIHdpZGdldHMvICAgICAgICAgICMgU2hhcmVkIFVJIGNvbXBvbmVudHMKYGBgCgotLS0KCiMjIFNjcmVlbnNob3RzCgpfQ29taW5nIHNvb25fCgotLS0KCiMjIENvbnRyaWJ1dGluZwoKUHVsbCByZXF1ZXN0cyBhcmUgd2VsY29tZS4gRm9yIG1ham9yIGNoYW5nZXMsIHBsZWFzZSBvcGVuIGFuIGlzc3VlIGZpcnN0IHRvIGRpc2N1c3Mgd2hhdCB5b3UnZCBsaWtlIHRvIGNoYW5nZS4KCiMjIExpY2Vuc2UKCltNSVRdKExJQ0VOU0UpCg==
+# Dittox
+
+> Document printing, simplified. Upload your files, find nearby print shops on a map, place an order, and track it to pickup — all from your phone.
+
+---
+
+## Features
+
+### Customer App
+
+- **File Upload** — Upload PDFs, images, and documents directly from your device or cloud storage
+- **Nearby Shop Discovery** — Browse a live map of print shops sorted by distance and ratings
+- **Order Placement** — Configure print settings (pages, copies, color/B&W, binding) and place orders in seconds
+- **Real-Time Tracking** — Follow your order status from submitted → printing → ready for pickup
+- **Order History** — View past orders, reorder, and download receipts
+
+### Store Mode (Print Shop Owners)
+
+- **Live Order Dashboard** — See incoming orders the instant they arrive
+- **Fast Actions** — Accept, reject, or mark orders complete with a single tap
+- **Bulk Updates** — Update multiple order statuses simultaneously
+- **Print-to-Pickup Workflow** — Guided queue management from print start to customer collection
+- **Revenue Tracking** — Daily and weekly order summaries
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Mobile App | Flutter (Dart) |
+| Authentication | Firebase Auth |
+| Database | Cloud Firestore |
+| File Storage | Firebase Cloud Storage |
+| Push Notifications | Firebase Cloud Messaging (FCM) |
+| Maps & Location | Google Maps API |
+| State Management | Provider / Riverpod |
+| CI/CD | GitHub Actions |
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Flutter 3.x+
+- Dart 3.x+
+- Firebase project configured for Android & iOS
+- Google Maps API key
+
+### Setup
+
+```bash
+git clone https://github.com/mohith2309/dittox.git
+cd dittox
+flutter pub get
+```
+
+Add your Firebase config files to the respective platform folders:
+- `android/app/google-services.json`
+- `ios/Runner/GoogleService-Info.plist`
+
+Create a `.env` file at the project root:
+
+```env
+GOOGLE_MAPS_API_KEY=your_key_here
+```
+
+### Run
+
+```bash
+flutter run
+```
+
+### Build APK
+
+```bash
+flutter build apk --release
+```
+
+---
+
+## Project Structure
+
+```
+lib/
+├── main.dart
+├── models/           # Order, Shop, User data models
+├── screens/
+│   ├── customer/     # File upload, map, order flow screens
+│   └── store/        # Owner dashboard and order management
+├── services/         # Firebase, Maps, file handling services
+└── widgets/          # Shared UI components
+```
+
+---
+
+## Screenshots
+
+_Coming soon_
+
+---
+
+## Contributing
+
+Pull requests are welcome. For major changes, please open an issue first to discuss what you'd like to change.
+
+## License
+
+[MIT](LICENSE)
