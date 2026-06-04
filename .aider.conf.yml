@@ -1,0 +1,11 @@
+model: ollama_chat/qwen2.5-coder:14b
+weak-model: ollama_chat/qwen2.5-coder:7b
+show-model-warnings: false
+check-update: false
+analytics-disable: true
+auto-commits: false
+dirty-commits: false
+git: false
+gitignore: false
+test-cmd: flutter test
+auto-test: false

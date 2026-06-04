@@ -1,0 +1,56 @@
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.buildDir = '../build'
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+}
+
+subprojects { subproject ->
+    afterEvaluate {
+        def androidExtension = subproject.extensions.findByName("android")
+        if (androidExtension == null) {
+            return
+        }
+
+        if (androidExtension.hasProperty("compileOptions")) {
+            androidExtension.compileOptions.sourceCompatibility = JavaVersion.VERSION_17
+            androidExtension.compileOptions.targetCompatibility = JavaVersion.VERSION_17
+        }
+
+        if (androidExtension.hasProperty("namespace")) {
+            def namespaceValue = androidExtension.namespace
+            if (namespaceValue == null || !namespaceValue.toString().trim()) {
+                def manifestFile = subproject.file("src/main/AndroidManifest.xml")
+                if (manifestFile.exists()) {
+                    def manifest = new XmlSlurper(false, false).parse(manifestFile)
+                    def manifestPackage = manifest.@package?.text()
+                    if (manifestPackage) {
+                        androidExtension.namespace = manifestPackage
+                    }
+                }
+            }
+        }
+
+        subproject.tasks.withType(org.gradle.api.tasks.compile.JavaCompile).configureEach {
+            sourceCompatibility = JavaVersion.VERSION_17.toString()
+            targetCompatibility = JavaVersion.VERSION_17.toString()
+        }
+
+        subproject.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+            kotlinOptions.jvmTarget = JavaVersion.VERSION_17.toString()
+        }
+    }
+}
+
+subprojects {
+    project.evaluationDependsOn(':app')
+}
+
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}

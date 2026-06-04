@@ -1,0 +1,29 @@
+# Static analysis configuration for the Dittox Flutter app.
+# Based on the recommended Flutter lints, with project-specific tuning below.
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - "build/**"
+    - ".dart_tool/**"
+
+linter:
+  rules:
+    # Performance: lock in const-correctness across the widget tree so new
+    # code keeps the optimizations applied during the cleanup pass.
+    prefer_const_constructors: true
+    prefer_const_constructors_in_immutables: true
+    prefer_const_literals_to_create_immutables: true
+    prefer_const_declarations: true
+
+    # Intentionally relaxed, long-standing project conventions.
+    # File names and many identifiers use legacy mixed/camelCase naming that is
+    # referenced widely across imports and providers; renaming would ripple
+    # through the whole codebase for no functional benefit.
+    file_names: false
+    camel_case_types: false
+    non_constant_identifier_names: false
+
+    # Debug-only logging helpers intentionally use print() behind assert()
+    # guards (stripped from release builds).
+    avoid_print: false

@@ -1,0 +1,171 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    match /users/{userId}/{document=**} {
+      allow read, write: if isOwner(userId);
+    }
+
+    match /push_tokens/{tokenId} {
+      allow read, delete: if signedIn()
+        && resource.data.userId == request.auth.uid;
+      allow create, update: if signedIn()
+        && request.resource.data.userId == request.auth.uid;
+    }
+
+    match /notification_opt_outs/{docId} {
+      allow read, delete: if signedIn()
+        && resource.data.userId == request.auth.uid;
+      allow create, update: if signedIn()
+        && request.resource.data.userId == request.auth.uid;
+    }
+
+    match /quiet_hours/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    match /operational_orders/{docId} {
+      allow read, create, update: if signedIn();
+      allow delete: if false;
+    }
+
+    match /operational_events/{docId} {
+      allow read, create: if signedIn();
+      allow update, delete: if false;
+    }
+
+    match /payment_confirmations/{docId} {
+      allow read, create, update: if signedIn();
+      allow delete: if false;
+    }
+
+    match /stores/{docId} {
+      allow read, create, update: if signedIn();
+      allow delete: if false;
+    }
+
+    match /orders_demo/{docId} {
+      allow read, create, update: if signedIn();
+      allow delete: if false;
+    }
+
+    match /orders_demo/{orderId}/file_chunks/{chunkId} {
+      allow read, create, update: if signedIn();
+      allow delete: if false;
+    }
+
+    match /notification_intents/{docId} {
+      allow read, create: if signedIn();
+      allow update, delete: if false;
+    }
+
+    match /webhook_outbox/{docId} {
+      allow read, create: if signedIn();
+      allow update, delete: if false;
+    }
+
+    match /printer_queue/{docId} {
+      allow read, create, update: if signedIn();
+      allow delete: if false;
+    }
+
+    match /print_dispatches/{docId} {
+      allow read: if signedIn();
+      allow create, update, delete: if false;
+    }
+
+    match /print_retry_queue/{docId} {
+      allow read, create: if signedIn();
+      allow update, delete: if false;
+    }
+
+    match /notification_deliveries/{docId} {
+      allow read: if signedIn();
+      allow create, update, delete: if false;
+    }
+
+    match /payment_retry_queue/{docId} {
+      allow read, create: if signedIn();
+      allow update, delete: if false;
+    }
+
+    match /analytics_events/{docId} {
+      allow read, create: if signedIn();
+      allow update, delete: if false;
+    }
+
+    match /report_exports/{docId} {
+      allow read, create: if signedIn();
+      allow update, delete: if false;
+    }
+
+    match /{collection}/{docId} {
+      allow read: if signedIn()
+        && collection in [
+          'api_definitions',
+          'analytics_reports',
+          'shop_profiles',
+          'service_menus',
+          'price_lists',
+          'holiday_overrides',
+          'printer_routes',
+          'printer_status',
+          'inventory_items',
+          'financial_reports',
+          'customer_insights'
+        ];
+
+      allow create, update: if signedIn()
+        && collection in [
+          'shop_profiles',
+          'service_menus',
+          'price_lists',
+          'holiday_overrides',
+          'staff_accounts',
+          'staff_shifts',
+          'break_slots',
+          'auto_accept_rules',
+          'rejection_templates',
+          'printer_routes',
+          'printer_status',
+          'inventory_items',
+          'supplier_reorders',
+          'supply_expenses',
+          'financial_reports',
+          'payouts',
+          'tax_reports',
+          'settlements',
+          'refunds',
+          'invoices',
+          'gst_reports',
+          'upi_settlements',
+          'wallet_transactions',
+          'customer_profiles',
+          'customer_insights',
+          'campaigns',
+          'topic_subscriptions',
+          'scheduled_notifications',
+          'notification_clicks',
+          'notification_templates',
+          'sync_state',
+          'backup_manifests',
+          'file_storage_refs',
+          'cdn_assets',
+          'rate_limits',
+          'api_versions',
+          'api_deprecations',
+          'otp_challenges'
+        ];
+
+      allow delete: if false;
+    }
+  }
+}

@@ -1,0 +1,94 @@
+name: dittox
+description: "A new Flutter project."
+publish_to: "none"
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.2.3 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  animations: ^2.0.7
+  intl: ^0.20.2
+  get: ^4.6.1
+  font_awesome_flutter: ^11.0.0
+  google_fonts: ^8.0.2
+
+  edge_detection: ^1.1.3
+
+  google_maps_flutter: ^2.2.5
+  geolocator: ^14.0.2
+  geocoding: ^4.0.0
+  fluttertoast: ^9.0.0
+  sqflite: ^2.2.6
+
+  path: ^1.8.1
+  path_provider: ^2.0.11
+  http: ^1.1.0
+  flutter_rating_bar: ^4.0.1
+
+  permission_handler: ^12.0.1
+  syncfusion_flutter_pdfviewer: ^33.1.46
+  syncfusion_flutter_pdf: ^33.1.46
+
+  pdf: ^3.3.0
+
+  timeline_tile: ^2.0.0
+  provider: ^6.0.5
+  connectivity_plus: ^7.1.0
+  cupertino_icons: ^1.0.2
+  shared_preferences: ^2.2.2
+  jwt_decoder: ^2.0.1
+  http_parser: ^4.0.0
+  file_picker: ^8.1.3
+  expandable: ^5.0.1
+  carousel_slider: ^5.1.2
+
+  syncfusion_flutter_sliders: ^33.1.46
+  syncfusion_flutter_core: ^33.1.46
+  sn_progress_dialog: ^1.1.3
+  razorpay_flutter: ^1.3.5
+
+  # Firebase
+  firebase_core: ^3.15.2
+  firebase_auth: ^5.1.0
+  google_sign_in: ^6.2.1
+  cloud_firestore: ^5.0.0
+  firebase_storage: ^12.0.0
+  firebase_messaging: ^15.0.0
+
+  url_launcher: ^6.1.10
+  open_filex: ^4.5.0
+  in_app_purchase: ^3.2.2
+  maps_launcher: ^3.0.0+1
+  pinput: ^6.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/image/forgotPassword.png
+    - assets/image/defaultStore.jpg
+    - assets/image/documentUpload.png
+    - assets/image/imageUpload.png
+    - assets/image/referFriend.png
+    - assets/image/ImageUpload2.png
+    - assets/image/no_connet.png
+    - assets/image/current_loaction.png
+    - assets/image/no_order.png
+    - assets/image/xerox_sample.png
+    - assets/image/mail.png
+    - assets/image/phone.png
+    - assets/image/text_msg.png
+    - assets/image/whatsapp.png
+    - assets/image/chrome.png
+    - assets/image/otp.png
+    - assets/image/dittox_home_logo.png
+    - assets/image/dittox_splash_logo.png

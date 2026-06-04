@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Order printouts, upload documents, and manage Dittox store queues online.">
+  <meta name="theme-color" content="#102A56">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Dittox">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>Dittox | Print Orders Online</title>
+  <link rel="manifest" href="manifest.json">
+
+  <script>
+    const dittoxWebVersion = "2026-05-01-web-ui-v3";
+
+    async function clearOldFlutterCache() {
+      try {
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(registrations.map((registration) => registration.unregister()));
+        }
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map((key) => caches.delete(key)));
+        }
+      } catch (_) {}
+    }
+  </script>
+  <!-- This script adds the flutter initialization JS code -->
+  <script src="flutter.js?v=2026-05-01-web-ui-v3" defer></script>
+</head>
+<body>
+  <script>
+    window.addEventListener('load', async function(ev) {
+      const reloadKey = 'dittox-cache-cleared-' + dittoxWebVersion;
+      const hasController = 'serviceWorker' in navigator && navigator.serviceWorker.controller;
+      if (hasController && sessionStorage.getItem(reloadKey) !== 'true') {
+        await clearOldFlutterCache();
+        sessionStorage.setItem(reloadKey, 'true');
+        window.location.reload();
+        return;
+      }
+
+      await clearOldFlutterCache();
+      _flutter.loader.loadEntrypoint({
+        entrypointUrl: 'main.dart.js?v=' + dittoxWebVersion,
+        onEntrypointLoaded: function(engineInitializer) {
+          engineInitializer.initializeEngine().then(function(appRunner) {
+            appRunner.runApp();
+          });
+        }
+      });
+    });
+  </script>
+</body>
+</html>
