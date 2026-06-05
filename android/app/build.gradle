@@ -25,6 +25,10 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 
+// Google Maps key — kept OUT of source control. Put it in android/local.properties
+// (gitignored) as: MAPS_API_KEY=your_key   ·  or pass -PMAPS_API_KEY=... to gradle.
+def mapsApiKey = localProperties.getProperty('MAPS_API_KEY') ?: (project.findProperty('MAPS_API_KEY') ?: "")
+
 android {
     namespace "com.login.dittox"
     compileSdk flutter.compileSdkVersion
@@ -56,7 +60,7 @@ android {
 
     buildTypes {
         debug {
-            manifestPlaceholders = [MAPS_API_KEY: "REDACTED_ROTATE_THIS_KEY"]
+            manifestPlaceholders = [MAPS_API_KEY: mapsApiKey]
         }
         release {
             // TODO: Add your own signing config for the release build.
@@ -64,7 +68,7 @@ android {
             signingConfig signingConfigs.debug
             minifyEnabled true
             shrinkResources true
-            manifestPlaceholders = [MAPS_API_KEY: "REDACTED_ROTATE_THIS_KEY"]
+            manifestPlaceholders = [MAPS_API_KEY: mapsApiKey]
         }
     }
 }
