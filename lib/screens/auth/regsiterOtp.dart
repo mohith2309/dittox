@@ -313,6 +313,8 @@ class _RegisterOtpState extends State<RegisterOtp> {
                     },
                     icon: FontAwesomeIcons.chevronLeft,
                     iconColor: ColorPallets.white,
+                    tooltip: "Back",
+                    semanticLabel: "Go back",
                     backGroundColor: ColorPallets.deepBlue,
                     size: calculateDynamicFontSize(
                       totalScreenHeight: totalScreenHeight,
