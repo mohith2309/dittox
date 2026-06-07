@@ -146,6 +146,8 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
                     },
                     icon: FontAwesomeIcons.chevronLeft,
                     iconColor: ColorPallets.white,
+                    tooltip: "Back",
+                    semanticLabel: "Go back",
                     backGroundColor: ColorPallets.deepBlue,
                     // size: 40,
                     size: calculateDynamicFontSize(

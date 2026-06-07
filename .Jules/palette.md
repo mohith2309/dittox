@@ -1,0 +1,3 @@
+## 2024-05-24 - Accessibility improvements for CustomIconButton
+**Learning:** Icon-only buttons implemented with `InkWell` and `FaIcon` inside a `Container` lack accessibility labels by default and don't provide tooltips. This is particularly problematic for screen readers and users who rely on keyboard navigation or need context for icons.
+**Action:** Always provide `semanticLabel` or `tooltip` for custom icon buttons. The `FaIcon` widget accepts a `semanticLabel` which is useful. In the future, prefer using Flutter's built-in `IconButton` which handles this more naturally, or add these explicit properties to custom wrapper components.

@@ -258,6 +258,8 @@ class _PasswordOTPState extends State<PasswordOTP> {
                     },
                     icon: FontAwesomeIcons.chevronLeft,
                     iconColor: ColorPallets.white,
+                    tooltip: "Back",
+                    semanticLabel: "Go back",
                     backGroundColor: ColorPallets.deepBlue,
                     // size: 40,
                     size: calculateDynamicFontSize(

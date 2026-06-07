@@ -359,6 +359,8 @@ class _SetLocationMapsState extends State<SetLocationMaps> {
                   if (context.mounted) Navigator.of(context).pop();
                 },
                 icon: FontAwesomeIcons.chevronLeft,
+                tooltip: "Back",
+                semanticLabel: "Go back",
                 iconColor: ColorPallets.white,
                 backGroundColor: ColorPallets.deepBlue,
                 size: 80,
