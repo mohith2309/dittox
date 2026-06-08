@@ -460,6 +460,9 @@ class _PasswordOTPState extends State<PasswordOTP> {
                                   ),
                                 ),
                                 child: IconButton(
+                                  tooltip: isObsecureText
+                                      ? 'Show password'
+                                      : 'Hide password',
                                   color: ColorPallets.white,
                                   icon: isObsecureText
                                       ? Icon(

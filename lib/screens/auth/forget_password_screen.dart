@@ -284,6 +284,7 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
                             : Padding(
                                 padding: const EdgeInsets.only(top: 0),
                                 child: IconButton(
+                                  tooltip: 'Clear email',
                                   onPressed: () {
                                     emailController.clear();
                                   },

@@ -1,0 +1,3 @@
+## 2024-06-08 - Icon-Only Button Accessibility
+**Learning:** Found multiple instances of `IconButton` used for clearing text inputs or toggling password visibility without proper `tooltip` or semantic labels. While sighted users might understand an "eye" icon, screen readers might just read it as "button", leading to poor accessibility. Providing conditional tooltips like `Show password` / `Hide password` not only helps screen readers but also acts as a visual hover hint for web and desktop platforms.
+**Action:** Always check `IconButton` usages for missing `tooltip` properties across the app, especially in authentication or form heavy screens.
