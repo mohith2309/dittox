@@ -311,72 +311,81 @@ class _PayLaterState extends State<PayLater> {
                         ),
                       ],
                     )
-                  : ListView(
+                  : ListView.builder(
                       physics: const AlwaysScrollableScrollPhysics(),
-                      children: [
-                        Card(
-                          margin: const EdgeInsets.symmetric(horizontal: 8),
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        "Orders: ${_visibleOrders.length}",
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w700,
-                                          color: ColorPallets.swiggyOrange,
+                      itemCount: _visibleOrders.isEmpty ? 2 : _visibleOrders.length + 1,
+                      itemBuilder: (context, index) {
+                        if (index == 0) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Card(
+                                margin: const EdgeInsets.symmetric(horizontal: 8),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(12),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              "Orders: ${_visibleOrders.length}",
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.w700,
+                                                color: ColorPallets.swiggyOrange,
+                                              ),
+                                            ),
+                                          ),
+                                          Text(
+                                            "Due: Rs ${_visibleTotalDue.toStringAsFixed(2)}",
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.w700,
+                                              color: ColorPallets.swiggyOrange,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      TextField(
+                                        onChanged: (value) =>
+                                            setState(() => _query = value),
+                                        decoration: InputDecoration(
+                                          hintText:
+                                              "Search by order id, store, or status",
+                                          prefixIcon: const Icon(Icons.search),
+                                          suffixIcon: _query.trim().isEmpty
+                                              ? null
+                                              : IconButton(
+                                                  onPressed: () =>
+                                                      setState(() => _query = ""),
+                                                  icon: const Icon(Icons.clear),
+                                                ),
+                                          border: const OutlineInputBorder(),
+                                          isDense: true,
                                         ),
                                       ),
-                                    ),
-                                    Text(
-                                      "Due: Rs ${_visibleTotalDue.toStringAsFixed(2)}",
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w700,
-                                        color: ColorPallets.swiggyOrange,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                TextField(
-                                  onChanged: (value) =>
-                                      setState(() => _query = value),
-                                  decoration: InputDecoration(
-                                    hintText:
-                                        "Search by order id, store, or status",
-                                    prefixIcon: const Icon(Icons.search),
-                                    suffixIcon: _query.trim().isEmpty
-                                        ? null
-                                        : IconButton(
-                                            onPressed: () =>
-                                                setState(() => _query = ""),
-                                            icon: const Icon(Icons.clear),
+                                      if (_lastSyncAt != null) ...[
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          "Last sync: ${_lastSyncAt!.hour.toString().padLeft(2, '0')}:${_lastSyncAt!.minute.toString().padLeft(2, '0')}:${_lastSyncAt!.second.toString().padLeft(2, '0')}",
+                                          style: const TextStyle(
+                                            color: Colors.black54,
+                                            fontSize: 12,
                                           ),
-                                    border: const OutlineInputBorder(),
-                                    isDense: true,
+                                        ),
+                                      ],
+                                    ],
                                   ),
                                 ),
-                                if (_lastSyncAt != null) ...[
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    "Last sync: ${_lastSyncAt!.hour.toString().padLeft(2, '0')}:${_lastSyncAt!.minute.toString().padLeft(2, '0')}:${_lastSyncAt!.second.toString().padLeft(2, '0')}",
-                                    style: const TextStyle(
-                                      color: Colors.black54,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        if (_visibleOrders.isEmpty)
-                          const Padding(
+                              ),
+                              const SizedBox(height: 10),
+                            ],
+                          );
+                        }
+
+                        if (_visibleOrders.isEmpty) {
+                          return const Padding(
                             padding: EdgeInsets.only(top: 80),
                             child: Center(
                               child: NoOrders.custom(
@@ -385,20 +394,14 @@ class _PayLaterState extends State<PayLater> {
                                     "Try a different search term or clear search.",
                               ),
                             ),
-                          )
-                        else
-                          ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: _visibleOrders.length,
-                            itemBuilder: (context, index) {
-                              return PayLaterCard(
-                                payLaterXeroxItem: _visibleOrders[index],
-                                accessToken: widget.accessToken,
-                              );
-                            },
-                          ),
-                      ],
+                          );
+                        }
+
+                        return PayLaterCard(
+                          payLaterXeroxItem: _visibleOrders[index - 1],
+                          accessToken: widget.accessToken,
+                        );
+                      },
                     ),
         ),
       ),
