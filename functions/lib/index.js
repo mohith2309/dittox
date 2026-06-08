@@ -67,6 +67,34 @@ async function markProcessed(ref, status, extra = {}) {
     }, { merge: true });
 }
 async function sendWebhook(url, payload) {
+    try {
+        const parsedUrl = new URL(url);
+        if (parsedUrl.protocol !== "https:") {
+            throw new Error("Invalid protocol: Only HTTPS is allowed for webhooks");
+        }
+        const hostname = parsedUrl.hostname;
+        // Basic protection against SSRF attacks on internal/local networks
+        const isLocalOrPrivate = hostname === 'localhost' ||
+            hostname === '127.0.0.1' ||
+            hostname === '0.0.0.0' ||
+            hostname.startsWith('10.') ||
+            hostname.startsWith('192.168.') ||
+            hostname.match(/^172\.(1[6-9]|2[0-9]|3[0-1])\./) ||
+            hostname.startsWith('169.254.') ||
+            hostname.endsWith('.local') ||
+            hostname.endsWith('.internal');
+        if (isLocalOrPrivate) {
+            throw new Error("Invalid hostname: Local and private IPs are blocked for security reasons");
+        }
+    }
+    catch (error) {
+        firebase_functions_1.logger.error("Webhook URL validation failed", error);
+        // Return a fake response that fails so the caller knows it didn't succeed.
+        return new Response(JSON.stringify({ error: "Invalid webhook URL" }), {
+            status: 400,
+            headers: { "content-type": "application/json" }
+        });
+    }
     return fetch(url, {
         method: "POST",
         headers: {
