@@ -296,6 +296,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 decoration:
                                     _glassInputDecoration("Password").copyWith(
                                   suffixIcon: IconButton(
+                                    tooltip: isObsecureText
+                                        ? 'Show password'
+                                        : 'Hide password',
                                     onPressed: () {
                                       setState(() =>
                                           isObsecureText = !isObsecureText);
