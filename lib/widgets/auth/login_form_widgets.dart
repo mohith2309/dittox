@@ -86,6 +86,9 @@ class AuthTextFormField extends StatelessWidget {
                   onPressed: isPassword
                       ? onVisibilityToggle
                       : () => controller.clear(),
+                  tooltip: isPassword
+                      ? (isObscure ? 'Show password' : 'Hide password')
+                      : 'Clear text',
                   icon: isPassword
                       ? Icon(
                           isObscure ? Icons.visibility : Icons.visibility_off,
