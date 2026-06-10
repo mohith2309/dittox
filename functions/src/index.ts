@@ -82,14 +82,32 @@ async function markProcessed(
   );
 }
 
-async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
-  return fetch(url, {
+async function sendWebhook(urlStr: string, payload: FirestoreData): Promise<Response> {
+  let url: URL;
+  try {
+    url = new URL(urlStr);
+  } catch (error) {
+    throw new Error("Invalid URL");
+  }
+
+  // SSRF Protection: Block localhost, private IPs, and metadata endpoints
+  const hostname = url.hostname.toLowerCase();
+  const blockedNames = ["localhost", "127.0.0.1", "169.254.169.254", "metadata.google.internal"];
+  const isPrivateIP = /^(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})$/.test(hostname);
+  const isIPv6Localhost = /^\[::1\]$/.test(hostname);
+
+  if (blockedNames.includes(hostname) || isPrivateIP || isIPv6Localhost) {
+    throw new Error("Blocked URL");
+  }
+
+  return fetch(urlStr, {
     method: "POST",
     headers: {
       "content-type": "application/json",
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    redirect: "error",
   });
 }
 
