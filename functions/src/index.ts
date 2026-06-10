@@ -82,7 +82,40 @@ async function markProcessed(
   );
 }
 
+function isSafeWebhookUrl(urlStr: string): boolean {
+  try {
+    const parsedUrl = new URL(urlStr);
+    if (parsedUrl.protocol !== "https:") return false;
+
+    const hostname = parsedUrl.hostname.toLowerCase();
+
+    // Block localhost
+    if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1" || hostname === "0.0.0.0") return false;
+
+    // Block cloud metadata and common internal domains
+    if (hostname === "169.254.169.254" || hostname === "metadata.google.internal") return false;
+    if (hostname.endsWith(".internal") || hostname.endsWith(".local")) return false;
+
+    // Block private IP ranges (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16)
+    if (hostname.startsWith("10.") || hostname.startsWith("192.168.")) return false;
+
+    const parts = hostname.split(".");
+    if (parts.length >= 4 && parts[0] === "172") {
+      const secondOctet = parseInt(parts[1], 10);
+      if (secondOctet >= 16 && secondOctet <= 31) return false;
+    }
+
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  if (!isSafeWebhookUrl(url)) {
+    throw new Error("unsafe_url");
+  }
+
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +123,7 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    redirect: "error",
   });
 }
 
