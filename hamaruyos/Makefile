@@ -1,10 +1,10 @@
 CC      = i686-elf-gcc
 LD      = i686-elf-ld
 ASM     = nasm
-CFLAGS  = -m32 -ffreestanding -fno-stack-protector -nostdlib -Wall -Wextra -std=c11
+CFLAGS  = -m32 -ffreestanding -fno-stack-protector -fno-pie -nostdlib -Wall -Wextra -std=c11 -Wno-unused-parameter
 LDFLAGS = -m elf_i386
 
-C_SOURCES := $(wildcard kernel/*.c drivers/*.c cpu/*.c)
+C_SOURCES := $(wildcard kernel/*.c drivers/*.c cpu/*.c gui/*.c)
 C_OBJS    := $(C_SOURCES:.c=.o)
 ASM_OBJS  := boot/kernel_entry.o cpu/interrupt.o
 
@@ -12,6 +12,7 @@ all: os-image
 
 os-image: boot/boot.bin kernel.bin
 	cat $^ > $@
+	@echo "Built os-image ($$(wc -c < os-image) bytes)"
 
 kernel.bin: $(ASM_OBJS) $(C_OBJS)
 	$(LD) $(LDFLAGS) -o $@ -Ttext 0x1000 $^ --oformat binary
@@ -34,12 +35,15 @@ cpu/interrupt.o: cpu/interrupt.asm
 run: os-image
 	qemu-system-i386 -fda os-image
 
+run-nographic: os-image
+	qemu-system-i386 -fda os-image -nographic -serial stdio
+
 debug: os-image kernel.elf
 	qemu-system-i386 -s -S -fda os-image &
 	i686-elf-gdb kernel.elf -ex "target remote :1234" -ex "break kernel_main" -ex "continue"
 
 clean:
 	rm -f os-image kernel.bin kernel.elf
-	rm -f boot/*.bin boot/*.o kernel/*.o drivers/*.o cpu/*.o
+	rm -f boot/*.bin boot/*.o kernel/*.o drivers/*.o cpu/*.o gui/*.o
 
-.PHONY: all run debug clean
+.PHONY: all run run-nographic debug clean
