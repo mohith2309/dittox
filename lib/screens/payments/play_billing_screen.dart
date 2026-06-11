@@ -24,7 +24,7 @@ class _PlayBillingScreenState extends State<PlayBillingScreen> {
   static const String _razorpayVerifyUrl = ApiEndPoiunts.razorpayVerifyPaymentUrl;
   static const String _razorpayKeyId = String.fromEnvironment(
     'DITTOX_RAZORPAY_KEY_ID',
-    defaultValue: 'rzp_test_ScE9I9VKKUwVWA',
+    defaultValue: '',
   );
   static const int _proAmountPaise = int.fromEnvironment(
     'DITTOX_PRO_AMOUNT_PAISE',
