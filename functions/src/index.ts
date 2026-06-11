@@ -82,7 +82,33 @@ async function markProcessed(
   );
 }
 
+function isSafeWebhookUrl(urlString: string): boolean {
+  try {
+    const parsed = new URL(urlString);
+    // Only allow HTTP/HTTPS protocols
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return false;
+
+    const hostname = parsed.hostname;
+
+    // Block localhost and loopback
+    if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]") return false;
+
+    // Block IPv4 private ranges and cloud metadata IP (169.254.169.254)
+    // Note: This regex assumes the hostname is an IP address. We use it to filter out private IP structures.
+    const isPrivateIPv4 = /^(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|169\.254\.\d{1,3}\.\d{1,3})$/.test(hostname);
+    if (isPrivateIPv4) return false;
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  if (!isSafeWebhookUrl(url)) {
+    throw new Error(`Unsafe webhook URL blocked: ${url}`);
+  }
+
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +116,7 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    redirect: "error", // Prevent SSRF via redirects
   });
 }
 
