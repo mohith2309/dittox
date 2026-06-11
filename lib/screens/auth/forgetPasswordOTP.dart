@@ -110,11 +110,7 @@ class _PasswordOTPState extends State<PasswordOTP> {
     double totalScreenWidth,
   ) {
     if (!mounted) return;
-    PillNotifications.show(
-      context,
-      message: message,
-      type: PillType.error,
-    );
+    PillNotifications.show(context, message: message, type: PillType.error);
   }
 
   @override
@@ -168,8 +164,9 @@ class _PasswordOTPState extends State<PasswordOTP> {
             // heightSpecific: true,
           ),
         ),
-        border:
-            Border.all(color: ColorPallets.lightBlue.withValues(alpha: 0.2)),
+        border: Border.all(
+          color: ColorPallets.lightBlue.withValues(alpha: 0.2),
+        ),
       ),
     );
 
@@ -273,6 +270,7 @@ class _PasswordOTPState extends State<PasswordOTP> {
                       currentFontSize: 40,
                       // heightSpecific: true,
                     ).toInt(),
+                    semanticLabel: 'Go back',
                   ),
                 ],
               ),

@@ -53,7 +53,9 @@ class _RegisterOtpState extends State<RegisterOtp> {
     _email = (map["email"] ?? '').toString().trim();
     _userName = (map["userName"] ?? '').toString().trim();
     _password = (map["password"] ?? '').toString();
-    _phoneE164 = FirebasePhoneAuth.toE164((map["phoneNumber"] ?? '').toString());
+    _phoneE164 = FirebasePhoneAuth.toE164(
+      (map["phoneNumber"] ?? '').toString(),
+    );
     _startVerification();
   }
 
@@ -134,18 +136,16 @@ class _RegisterOtpState extends State<RegisterOtp> {
   }
 
   Future<void> _completeRegistration(
-      PhoneAuthCredential phoneCredential) async {
+    PhoneAuthCredential phoneCredential,
+  ) async {
     if (_busy) return;
     _busy = true;
     if (mounted) setState(() {});
     focusNode.unfocus();
 
     try {
-      final account =
-          await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: _email,
-        password: _password,
-      );
+      final account = await FirebaseAuth.instance
+          .createUserWithEmailAndPassword(email: _email, password: _password);
       final user = account.user;
       if (user == null) throw FirebaseAuthException(code: 'unknown');
 
@@ -243,8 +243,9 @@ class _RegisterOtpState extends State<RegisterOtp> {
             currentFontSize: 40,
           ),
         ),
-        border:
-            Border.all(color: ColorPallets.lightBlue.withValues(alpha: 0.2)),
+        border: Border.all(
+          color: ColorPallets.lightBlue.withValues(alpha: 0.2),
+        ),
       ),
     );
 
@@ -324,6 +325,7 @@ class _RegisterOtpState extends State<RegisterOtp> {
                       totalScreenWidth: totalScreenWidth,
                       currentFontSize: 40,
                     ).toInt(),
+                    semanticLabel: 'Go back',
                   ),
                 ],
               ),
@@ -419,7 +421,9 @@ class _RegisterOtpState extends State<RegisterOtp> {
                       ),
                     ),
                     TextButton(
-                      onPressed: (_sending || _busy) ? null : _startVerification,
+                      onPressed: (_sending || _busy)
+                          ? null
+                          : _startVerification,
                       child: const Text("Resend code"),
                     ),
                     SizedBox(
