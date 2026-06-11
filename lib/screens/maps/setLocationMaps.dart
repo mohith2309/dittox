@@ -44,7 +44,9 @@ class _SetLocationMapsState extends State<SetLocationMaps> {
 
   void setCustomMarker() async {
     mapMaker = await BitmapDescriptor.asset(
-        const ImageConfiguration(), "assets/image/pin_gif.gif");
+      const ImageConfiguration(),
+      "assets/image/pin_gif.gif",
+    );
   }
 
   static const CameraPosition _initialCameraPosition = CameraPosition(
@@ -77,7 +79,7 @@ class _SetLocationMapsState extends State<SetLocationMaps> {
           onTap: () async => await goToSearchedPlace(lat, lng, 16.5),
           icon: BitmapDescriptor.defaultMarker,
           draggable: true,
-        )
+        ),
       };
     });
   }
@@ -90,7 +92,10 @@ class _SetLocationMapsState extends State<SetLocationMaps> {
   }
 
   Future<void> updateOnTapLocation(
-      CurrentUser curUser, LatLng location, double zooms) async {
+    CurrentUser curUser,
+    LatLng location,
+    double zooms,
+  ) async {
     try {
       setState(() {
         isLoading = true;
@@ -98,7 +103,9 @@ class _SetLocationMapsState extends State<SetLocationMaps> {
         _pendingLng = location.longitude;
       });
       final userPlaceMark = await UserLocation.getUserPlaceMarks(
-          location.latitude, location.longitude);
+        location.latitude,
+        location.longitude,
+      );
       await goToSearchedPlace(location.latitude, location.longitude, zooms);
       setMarkers(location.latitude, location.longitude);
       curUser.updateUserLocation(location.latitude, location.longitude);
@@ -122,7 +129,9 @@ class _SetLocationMapsState extends State<SetLocationMaps> {
       setState(() => isLoading = true);
       final position = await UserLocation.getUserLatLong();
       final userPlaceMark = await UserLocation.getUserPlaceMarks(
-          position.latitude, position.longitude);
+        position.latitude,
+        position.longitude,
+      );
       await goToSearchedPlace(position.latitude, position.longitude, zooms);
       setMarkers(position.latitude, position.longitude);
       curUser.updateUserLocation(position.latitude, position.longitude);
@@ -177,37 +186,39 @@ class _SetLocationMapsState extends State<SetLocationMaps> {
             child: GestureDetector(
               onTap: () => goToCurrentLocation(curUser, 18),
               child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  color: ColorPallets.swiggyOrange.withValues(alpha: 0.95),
+                  borderRadius: BorderRadius.circular(
+                    calculateDynamicFontSize(
+                      totalScreenHeight: size.height,
+                      totalScreenWidth: size.width,
+                      currentFontSize: 50,
+                    ),
                   ),
-                  decoration: BoxDecoration(
-                    color: ColorPallets.swiggyOrange.withValues(alpha: 0.95),
-                    borderRadius: BorderRadius.circular(
-                        calculateDynamicFontSize(
-                            totalScreenHeight: size.height,
-                            totalScreenWidth: size.width,
-                            currentFontSize: 50)),
-                    boxShadow: [
-                      BoxShadow(
-                          color:
-                              ColorPallets.swiggyOrange.withValues(alpha: 0.6),
-                          blurRadius: 10)
-                    ],
-                  ),
-                  height: 50,
-                  width: 170,
-                  child: const Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.my_location_rounded,
-                        color: Colors.white,
-                        size: 18,
-                      ),
-                      SizedBox(width: 8),
-                      Expanded(
-                          child: Text(
+                  boxShadow: [
+                    BoxShadow(
+                      color: ColorPallets.swiggyOrange.withValues(alpha: 0.6),
+                      blurRadius: 10,
+                    ),
+                  ],
+                ),
+                height: 50,
+                width: 170,
+                child: const Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.my_location_rounded,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
                         "Current Location",
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -216,24 +227,29 @@ class _SetLocationMapsState extends State<SetLocationMaps> {
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                         ),
-                      )),
-                    ],
-                  )),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
           Positioned(
             bottom: 0,
             child: Container(
               decoration: BoxDecoration(
-                  color: ColorPallets.deepBlue.withValues(alpha: 0.9),
-                  borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(40),
-                      topRight: Radius.circular(40)),
-                  boxShadow: [
-                    BoxShadow(
-                        color: ColorPallets.deepBlue.withValues(alpha: 1),
-                        blurRadius: 30)
-                  ]),
+                color: ColorPallets.deepBlue.withValues(alpha: 0.9),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(40),
+                  topRight: Radius.circular(40),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: ColorPallets.deepBlue.withValues(alpha: 1),
+                    blurRadius: 30,
+                  ),
+                ],
+              ),
               constraints: BoxConstraints(
                 minHeight: 180,
                 maxHeight: size.height * 0.34,
@@ -241,129 +257,147 @@ class _SetLocationMapsState extends State<SetLocationMaps> {
               width: size.width,
               child: isLoading
                   ? const Center(
-                      child: CircularProgressIndicator(color: Colors.white))
-                  : Column(children: [
-                      Expanded(
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 16, horizontal: 24),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      placeName,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  GestureDetector(
-                                    onTap: () => Navigator.of(context)
-                                        .pushNamed(LocationText.routeName),
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 16, vertical: 8),
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(24),
-                                        border: Border.all(
-                                            color: Colors.white, width: 2),
-                                      ),
-                                      child: const Text(
-                                        "Change",
-                                        style: TextStyle(
+                      child: CircularProgressIndicator(color: Colors.white),
+                    )
+                  : Column(
+                      children: [
+                        Expanded(
+                          child: SingleChildScrollView(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 16,
+                              horizontal: 24,
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        placeName,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
                                           color: Colors.white,
-                                          fontSize: 16,
+                                          fontSize: 24,
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 10),
-                              Text(
-                                "$placeName, $countryName",
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 16,
+                                    const SizedBox(width: 12),
+                                    GestureDetector(
+                                      onTap: () => Navigator.of(
+                                        context,
+                                      ).pushNamed(LocationText.routeName),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 8,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(
+                                            24,
+                                          ),
+                                          border: Border.all(
+                                            color: Colors.white,
+                                            width: 2,
+                                          ),
+                                        ),
+                                        child: const Text(
+                                          "Change",
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                            ],
+                                const SizedBox(height: 10),
+                                Text(
+                                  "$placeName, $countryName",
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                      GestureDetector(
-                        onTap: () async {
-                          if (_locationConfirmed && _pendingLat != null && _pendingLng != null) {
-                            final userMap = curUser.userMap;
-                            userMap['latitude'] = _pendingLat;
-                            userMap['longitude'] = _pendingLng;
-                            await LocationHistoryStore.addLocation(
-                              placeName: placeName,
-                              latitude: _pendingLat!,
-                              longitude: _pendingLng!,
-                              country: countryName,
-                            );
-                          }
-                          if (context.mounted) Navigator.of(context).pop();
-                        },
-                        child: Container(
-                          height: 56,
-                          width: double.infinity,
-                          color: ColorPallets.swiggyOrange,
-                          child: const Center(
-                            child: Text(
-                              "Confirm",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 22,
-                                fontWeight: FontWeight.w600,
-                                letterSpacing: 1,
+                        GestureDetector(
+                          onTap: () async {
+                            if (_locationConfirmed &&
+                                _pendingLat != null &&
+                                _pendingLng != null) {
+                              final userMap = curUser.userMap;
+                              userMap['latitude'] = _pendingLat;
+                              userMap['longitude'] = _pendingLng;
+                              await LocationHistoryStore.addLocation(
+                                placeName: placeName,
+                                latitude: _pendingLat!,
+                                longitude: _pendingLng!,
+                                country: countryName,
+                              );
+                            }
+                            if (context.mounted) Navigator.of(context).pop();
+                          },
+                          child: Container(
+                            height: 56,
+                            width: double.infinity,
+                            color: ColorPallets.swiggyOrange,
+                            child: const Center(
+                              child: Text(
+                                "Confirm",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 1,
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      )
-                    ]),
+                      ],
+                    ),
             ),
           ),
           Positioned(
-              left: 50,
-              top: 80,
-              child: CustomIconButton(
-                onPressed: () async {
-                  if (_locationConfirmed && _pendingLat != null && _pendingLng != null) {
-                    final userMap = curUser.userMap;
-                    userMap['latitude'] = _pendingLat;
-                    userMap['longitude'] = _pendingLng;
-                    await LocationHistoryStore.addLocation(
-                      placeName: placeName,
-                      latitude: _pendingLat!,
-                      longitude: _pendingLng!,
-                      country: countryName,
-                    );
-                  }
-                  if (context.mounted) Navigator.of(context).pop();
-                },
-                icon: FontAwesomeIcons.chevronLeft,
-                iconColor: ColorPallets.white,
-                backGroundColor: ColorPallets.deepBlue,
-                size: 80,
-                iconSize: 40,
-              ))
+            left: 50,
+            top: 80,
+            child: CustomIconButton(
+              onPressed: () async {
+                if (_locationConfirmed &&
+                    _pendingLat != null &&
+                    _pendingLng != null) {
+                  final userMap = curUser.userMap;
+                  userMap['latitude'] = _pendingLat;
+                  userMap['longitude'] = _pendingLng;
+                  await LocationHistoryStore.addLocation(
+                    placeName: placeName,
+                    latitude: _pendingLat!,
+                    longitude: _pendingLng!,
+                    country: countryName,
+                  );
+                }
+                if (context.mounted) Navigator.of(context).pop();
+              },
+              icon: FontAwesomeIcons.chevronLeft,
+              iconColor: ColorPallets.white,
+              backGroundColor: ColorPallets.deepBlue,
+              size: 80,
+              iconSize: 40,
+              semanticLabel: 'Go back',
+            ),
+          ),
         ],
       ),
     );

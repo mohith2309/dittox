@@ -93,11 +93,7 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
     double totalScreenWidth,
   ) {
     if (!mounted) return;
-    PillNotifications.show(
-      context,
-      message: message,
-      type: PillType.error,
-    );
+    PillNotifications.show(context, message: message, type: PillType.error);
   }
 
   @override
@@ -161,6 +157,7 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
                       currentFontSize: 40,
                       // heightSpecific: true,
                     ).toInt(),
+                    semanticLabel: 'Go back',
                   ),
                 ],
               ),
@@ -314,9 +311,9 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
                       onTap: _isSending
                           ? null
                           : () => sendResetEmail(
-                                totalScreenHeight,
-                                totalScreenWidth,
-                              ),
+                              totalScreenHeight,
+                              totalScreenWidth,
+                            ),
                       child: Container(
                         // height: 50,
                         height: calculateDynamicFontSize(
