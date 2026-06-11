@@ -1,0 +1,1 @@
+## 2026-06-11 - Prevent Excessive Filtering\n**Learning:** The Flutter codebase triggers costly filtering (like `_visibleOrders`) and re-renders on every keystroke if search `TextField` inputs aren't debounced.\n**Action:** Use the existing `Debouncer` in `app_optimizations.dart` for search text fields to prevent UI jank.
