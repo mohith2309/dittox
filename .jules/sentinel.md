@@ -1,0 +1,4 @@
+## 2024-06-11 - Prevent SSRF in Webhook Delivery
+**Vulnerability:** The Cloud Functions exported `sendWebhook` function was fetching user-provided URLs (`targetUrl`, `webhookUrl`) without any validation, allowing for Server-Side Request Forgery (SSRF) attacks against local networks and cloud metadata instances.
+**Learning:** Functions triggered by user-supplied data in Firestore that make outbound HTTP requests must strictly validate the destination URL to block loopback (`localhost`, `127.0.0.1`), private networks (`10.x.x.x`, `192.168.x.x`, `172.16.x.x`), and particularly cloud provider metadata endpoints (`169.254.169.254`, `metadata.google.internal`).
+**Prevention:** Always implement a strict `isSafeUrl` check that parses the URL protocol and hostname, verifying against a blocklist of local/private/metadata addresses. Additionally, enforce `redirect: 'error'` on `fetch` calls to prevent redirect-based SSRF bypasses.
