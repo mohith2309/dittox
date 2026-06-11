@@ -44,7 +44,7 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
       ApiEndPoiunts.razorpayVerifyPaymentUrl;
   static const String _razorpayKeyId = String.fromEnvironment(
     'DITTOX_RAZORPAY_KEY_ID',
-    defaultValue: 'rzp_test_ScE9I9VKKUwVWA',
+    defaultValue: '',
   );
 
   String _accessToken = "";

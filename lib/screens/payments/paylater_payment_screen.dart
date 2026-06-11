@@ -23,7 +23,7 @@ class PayLaterPaymentScreen extends StatefulWidget {
 class _PayLaterPaymentScreenState extends State<PayLaterPaymentScreen> {
   static const String _razorpayKeyId = String.fromEnvironment(
     'DITTOX_RAZORPAY_KEY_ID',
-    defaultValue: 'rzp_test_ScE9I9VKKUwVWA',
+    defaultValue: '',
   );
 
   late Razorpay _razorpay;

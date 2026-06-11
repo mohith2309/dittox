@@ -30,7 +30,7 @@ class SummaryScreen extends StatefulWidget {
 class _SummaryScreenState extends State<SummaryScreen> {
   static const String _razorpayKeyId = String.fromEnvironment(
     'DITTOX_RAZORPAY_KEY_ID',
-    defaultValue: 'rzp_test_ScE9I9VKKUwVWA',
+    defaultValue: '',
   );
 
   late Razorpay _razorPay;
