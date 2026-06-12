@@ -307,7 +307,9 @@ class _SetLocationMapsState extends State<SetLocationMaps> {
                       ),
                       GestureDetector(
                         onTap: () async {
-                          if (_locationConfirmed && _pendingLat != null && _pendingLng != null) {
+                          if (_locationConfirmed &&
+                              _pendingLat != null &&
+                              _pendingLng != null) {
                             final userMap = curUser.userMap;
                             userMap['latitude'] = _pendingLat;
                             userMap['longitude'] = _pendingLng;
@@ -344,8 +346,11 @@ class _SetLocationMapsState extends State<SetLocationMaps> {
               left: 50,
               top: 80,
               child: CustomIconButton(
+                semanticLabel: "Back",
                 onPressed: () async {
-                  if (_locationConfirmed && _pendingLat != null && _pendingLng != null) {
+                  if (_locationConfirmed &&
+                      _pendingLat != null &&
+                      _pendingLng != null) {
                     final userMap = curUser.userMap;
                     userMap['latitude'] = _pendingLat;
                     userMap['longitude'] = _pendingLng;
