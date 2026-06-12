@@ -53,7 +53,8 @@ class _RegisterOtpState extends State<RegisterOtp> {
     _email = (map["email"] ?? '').toString().trim();
     _userName = (map["userName"] ?? '').toString().trim();
     _password = (map["password"] ?? '').toString();
-    _phoneE164 = FirebasePhoneAuth.toE164((map["phoneNumber"] ?? '').toString());
+    _phoneE164 =
+        FirebasePhoneAuth.toE164((map["phoneNumber"] ?? '').toString());
     _startVerification();
   }
 
@@ -308,6 +309,7 @@ class _RegisterOtpState extends State<RegisterOtp> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   CustomIconButton(
+                    semanticLabel: "Back",
                     onPressed: () {
                       Navigator.of(context).pop();
                     },
@@ -419,7 +421,8 @@ class _RegisterOtpState extends State<RegisterOtp> {
                       ),
                     ),
                     TextButton(
-                      onPressed: (_sending || _busy) ? null : _startVerification,
+                      onPressed:
+                          (_sending || _busy) ? null : _startVerification,
                       child: const Text("Resend code"),
                     ),
                     SizedBox(

@@ -140,6 +140,7 @@ class _ForgetPasswordScreenState extends State<ForgetPasswordScreen> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   CustomIconButton(
+                    semanticLabel: "Back",
                     onPressed: () {
                       Navigator.of(context).pop();
                       ScaffoldMessenger.of(context).clearSnackBars();
