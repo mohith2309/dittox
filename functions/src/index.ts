@@ -56,6 +56,21 @@ function dayKey(date = new Date()): string {
   return date.toISOString().slice(0, 10);
 }
 
+function isSafeUrl(urlString: string): boolean {
+  try {
+    const url = new URL(urlString);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return false;
+    const h = url.hostname;
+    if (h === "localhost" || h === "[::1]" || h === "169.254.169.254" || h.endsWith(".internal")) return false;
+    if (/^(?:127|10)\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(h)) return false;
+    if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(h)) return false;
+    if (/^172\.(?:1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(h)) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function writeAudit(action: string, payload: FirestoreData): Promise<void> {
   const id = safeId(`${action}-${Date.now()}-${Math.random()}`);
   await db.collection(collections.auditLogs).doc(id).set({
@@ -83,6 +98,9 @@ async function markProcessed(
 }
 
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  if (!isSafeUrl(url)) {
+    throw new Error("Invalid or unsafe webhook URL");
+  }
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +108,7 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    redirect: "error", // Prevent bypass via redirects
   });
 }
 
