@@ -82,7 +82,36 @@ async function markProcessed(
   );
 }
 
+function isSafeUrl(urlString: string): boolean {
+  try {
+    const parsed = new URL(urlString);
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return false;
+    const hostname = parsed.hostname.toLowerCase();
+
+    // Check for localhost/internal hostnames
+    if (["localhost", "127.0.0.1", "[::1]"].includes(hostname)) return false;
+    if (hostname.endsWith(".local") || hostname.endsWith(".internal")) return false;
+    if (hostname === "169.254.169.254" || hostname === "[::ffff:169.254.169.254]") return false; // Cloud metadata
+
+    // Check for private IPv4 blocks
+    // 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
+    const ipv4Regex = /^(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})$/;
+    if (ipv4Regex.test(hostname)) return false;
+
+    // Check for unique local address IPv6 blocks (fc00::/7) - naive check
+    if (hostname.startsWith("[fc") || hostname.startsWith("[fd")) return false;
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  if (!isSafeUrl(url)) {
+    throw new Error("Invalid or unsafe webhook URL");
+  }
+
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +119,7 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    redirect: "error",
   });
 }
 
