@@ -252,6 +252,7 @@ class _PasswordOTPState extends State<PasswordOTP> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   CustomIconButton(
+                    tooltip: 'Go back',
                     onPressed: () {
                       Navigator.of(context).pop();
                       ScaffoldMessenger.of(context).clearSnackBars();

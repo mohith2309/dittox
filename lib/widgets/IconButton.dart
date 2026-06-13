@@ -8,6 +8,8 @@ class CustomIconButton extends StatelessWidget {
   final int iconSize;
   final int size;
   final VoidCallback onPressed;
+  final String? tooltip;
+
   const CustomIconButton({
     super.key,
     required this.icon,
@@ -16,23 +18,52 @@ class CustomIconButton extends StatelessWidget {
     required this.size,
     required this.iconSize,
     required this.onPressed,
+    this.tooltip,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onPressed,
-      child: Container(
-          decoration: BoxDecoration(
-              color: backGroundColor,
-              borderRadius: BorderRadius.circular(size / 2)),
+    Widget button = Ink(
+      decoration: BoxDecoration(
+        color: backGroundColor,
+        borderRadius: BorderRadius.circular(size / 2),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(size / 2),
+        onTap: onPressed,
+        child: SizedBox(
           height: size.toDouble(),
           width: size.toDouble(),
-          child: FaIcon(
-            icon,
-            color: iconColor,
-            size: iconSize.toDouble(),
-          )),
+          child: Center(
+            child: FaIcon(
+              icon,
+              color: iconColor,
+              size: iconSize.toDouble(),
+              semanticLabel: tooltip,
+            ),
+          ),
+        ),
+      ),
     );
+
+    if (tooltip != null) {
+      button = Tooltip(
+        message: tooltip!,
+        child: button,
+      );
+
+      button = Semantics(
+        button: true,
+        label: tooltip,
+        child: button,
+      );
+    } else {
+      button = Semantics(
+        button: true,
+        child: button,
+      );
+    }
+
+    return button;
   }
 }
