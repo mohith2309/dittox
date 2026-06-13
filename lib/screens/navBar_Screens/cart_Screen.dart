@@ -10,6 +10,7 @@ import "../../utils/color_pallets.dart";
 import "../../utils/demo_orders_store.dart";
 import "../../utils/dynamicSizing.dart";
 import "../../utils/firestore_orders_sync.dart";
+import "../../utils/app_optimizations.dart";
 import "../../utils/favorite_stores_store.dart";
 import "../../utils/orders_cache_store.dart";
 import "../../utils/security_utils.dart";
@@ -39,6 +40,7 @@ class _CartScreenState extends State<CartScreen> {
   String _statusFilter = "all";
   String _sortMode = "newest";
   final TextEditingController _searchController = TextEditingController();
+  final Debouncer _searchDebouncer = Debouncer(milliseconds: 300);
   final FocusNode _searchFocus = FocusNode();
   List<String> _recentSearches = const <String>[];
 
@@ -70,6 +72,7 @@ class _CartScreenState extends State<CartScreen> {
 
   @override
   void dispose() {
+    _searchDebouncer.dispose();
     _searchController.dispose();
     _searchFocus.dispose();
     super.dispose();
@@ -588,8 +591,8 @@ class _CartScreenState extends State<CartScreen> {
                                   controller: _searchController,
                                   focusNode: _searchFocus,
                                   textInputAction: TextInputAction.search,
-                                  onChanged: (value) =>
-                                      setState(() => _query = value),
+                                  onChanged: (value) => _searchDebouncer.run(
+                                      () => setState(() => _query = value)),
                                   onSubmitted: _rememberSearch,
                                   decoration: InputDecoration(
                                     hintText:

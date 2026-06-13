@@ -19,6 +19,7 @@ import '../../utils/color_pallets.dart';
 import '../../utils/browser_print_stub.dart'
     if (dart.library.html) '../../utils/browser_print_web.dart';
 import '../../utils/demo_data.dart';
+import '../../utils/app_optimizations.dart';
 import '../../utils/demo_orders_store.dart';
 import '../../utils/firestore_shop_service.dart';
 import '../../utils/shop_auto_mode_store.dart';
@@ -2421,6 +2422,7 @@ class _WebCustomerAppScreenState extends State<WebCustomerAppScreen> {
   final _notesController = TextEditingController();
   final _deliveryAddressController = TextEditingController();
   final _ordersSearchController = TextEditingController();
+  final Debouncer _ordersSearchDebouncer = Debouncer(milliseconds: 300);
   String _fileName = '';
   String _fileSize = '';
   String _fileDataUrl = '';
@@ -2497,6 +2499,7 @@ class _WebCustomerAppScreenState extends State<WebCustomerAppScreen> {
     _pageRangeController.dispose();
     _notesController.dispose();
     _deliveryAddressController.dispose();
+    _ordersSearchDebouncer.dispose();
     _ordersSearchController.dispose();
     _ordersRefreshTimer?.cancel();
     _orderChangesSub?.cancel();
@@ -4521,7 +4524,7 @@ class _WebCustomerAppScreenState extends State<WebCustomerAppScreen> {
               labelText: 'Search orders',
               prefixIcon: Icon(Icons.search_rounded),
             ),
-            onChanged: (_) => setState(() {}),
+            onChanged: (_) => _ordersSearchDebouncer.run(() => setState(() {})),
           ),
           DropdownButtonFormField<String>(
             initialValue: _ordersStatusFilter,
