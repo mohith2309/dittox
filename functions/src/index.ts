@@ -56,6 +56,49 @@ function dayKey(date = new Date()): string {
   return date.toISOString().slice(0, 10);
 }
 
+function isSafeUrl(urlString: string): boolean {
+  try {
+    const parsedUrl = new URL(urlString);
+
+    // Only allow HTTP/HTTPS
+    if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+      return false;
+    }
+
+    const hostname = parsedUrl.hostname;
+
+    // Prevent cloud metadata
+    if (hostname === "169.254.169.254" || hostname === "[fd00:ec2::254]") {
+      return false;
+    }
+
+    // Check for localhost/loopback
+    if (
+      hostname === "localhost" ||
+      hostname === "[::1]" ||
+      hostname === "0.0.0.0" ||
+      hostname === "[::]" ||
+      hostname.endsWith(".localhost") ||
+      /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname)
+    ) {
+      return false;
+    }
+
+    // Check for private IPs
+    if (
+      /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+      /^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+      /^172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(hostname)
+    ) {
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
 async function writeAudit(action: string, payload: FirestoreData): Promise<void> {
   const id = safeId(`${action}-${Date.now()}-${Math.random()}`);
   await db.collection(collections.auditLogs).doc(id).set({
@@ -83,6 +126,9 @@ async function markProcessed(
 }
 
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  if (!isSafeUrl(url)) {
+    throw new Error(`Unsafe webhook URL blocked: ${url}`);
+  }
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +136,7 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    redirect: "error",
   });
 }
 
