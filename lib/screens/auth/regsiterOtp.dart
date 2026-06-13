@@ -308,6 +308,7 @@ class _RegisterOtpState extends State<RegisterOtp> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   CustomIconButton(
+                    tooltip: 'Go back',
                     onPressed: () {
                       Navigator.of(context).pop();
                     },

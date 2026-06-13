@@ -344,6 +344,7 @@ class _SetLocationMapsState extends State<SetLocationMaps> {
               left: 50,
               top: 80,
               child: CustomIconButton(
+                tooltip: 'Go back',
                 onPressed: () async {
                   if (_locationConfirmed && _pendingLat != null && _pendingLng != null) {
                     final userMap = curUser.userMap;
