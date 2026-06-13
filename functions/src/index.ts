@@ -66,6 +66,44 @@ async function writeAudit(action: string, payload: FirestoreData): Promise<void>
   });
 }
 
+function isSafeWebhookUrl(urlString: string): boolean {
+  try {
+    const parsed = new URL(urlString);
+    const hostname = parsed.hostname.toLowerCase();
+
+    // Check for IPv6 localhost/private (wrapped in brackets by URL.hostname)
+    if (hostname.includes('[::1]') || hostname.includes('[0:0:0:0:0:0:0:1]') || hostname.includes('[::]')) {
+      return false;
+    }
+
+    // Check for localhost and common private names
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0' || hostname.endsWith('.local')) {
+      return false;
+    }
+
+    // Check for IPv4 private subnets and loopback
+    // 127.0.0.0/8
+    // 10.0.0.0/8
+    // 172.16.0.0/12
+    // 192.168.0.0/16
+    // 169.254.0.0/16
+    const ipv4Regex = /^(?:127\.\d{1,3}\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|169\.254\.\d{1,3}\.\d{1,3}|0\.\d{1,3}\.\d{1,3}\.\d{1,3})$/;
+
+    if (ipv4Regex.test(hostname)) {
+      return false;
+    }
+
+    // Also block cloud metadata services
+    if (hostname === '169.254.169.254') {
+      return false;
+    }
+
+    return parsed.protocol === 'https:' || parsed.protocol === 'http:';
+  } catch (err) {
+    return false; // Invalid URL
+  }
+}
+
 async function markProcessed(
   ref: FirebaseFirestore.DocumentReference,
   status: string,
@@ -83,6 +121,10 @@ async function markProcessed(
 }
 
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  if (!isSafeWebhookUrl(url)) {
+    throw new Error(`Unsafe webhook URL blocked: ${url}`);
+  }
+
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +132,7 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    redirect: "error", // Prevent SSRF via open redirects
   });
 }
 

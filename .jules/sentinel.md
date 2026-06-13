@@ -1,0 +1,4 @@
+## 2024-06-13 - SSRF Prevention in Webhooks
+**Vulnerability:** The `sendWebhook` function in Firebase Cloud Functions was performing raw `fetch` calls to user-controlled URLs without validating the target domain or handling redirects, creating a critical Server-Side Request Forgery (SSRF) risk.
+**Learning:** URL.hostname parsing is necessary to catch edge cases like IPv6 addresses wrapped in brackets (e.g., `[::1]`) or variations of localhost/loopback. Setting `redirect: 'error'` in `fetch` is crucial to prevent attackers from bypassing the URL check via an external open redirect that points back to an internal service.
+**Prevention:** Always validate webhook URLs against a stringent blocklist (blocking private IPs, localhost, and cloud metadata like `169.254.169.254`) and enforce strict redirect policies when making server-side requests based on user input.
