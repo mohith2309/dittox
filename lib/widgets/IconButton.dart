@@ -22,16 +22,19 @@ class CustomIconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onPressed,
-      child: Container(
+      borderRadius: BorderRadius.circular(size / 2),
+      child: Ink(
           decoration: BoxDecoration(
               color: backGroundColor,
               borderRadius: BorderRadius.circular(size / 2)),
           height: size.toDouble(),
           width: size.toDouble(),
-          child: FaIcon(
-            icon,
-            color: iconColor,
-            size: iconSize.toDouble(),
+          child: Center(
+            child: FaIcon(
+              icon,
+              color: iconColor,
+              size: iconSize.toDouble(),
+            ),
           )),
     );
   }
