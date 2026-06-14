@@ -33,6 +33,42 @@ const collections = {
   supplierReorders: "supplier_reorders",
 };
 
+function isSafeUrl(urlString: string): boolean {
+  try {
+    const url = new URL(urlString);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return false;
+
+    const hostname = url.hostname;
+
+    // Cloud metadata
+    if (hostname === "169.254.169.254" || hostname === "[::ffff:169.254.169.254]") return false;
+
+    // IPv4 private/loopback/link-local/broadcast
+    const ipv4Pattern = /^(?:127\.\d{1,3}\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|0\.0\.0\.0|255\.255\.255\.255)$/;
+    if (ipv4Pattern.test(hostname)) return false;
+
+    // IPv6 loopback/private/link-local (must account for brackets in node URL object)
+    if (
+      hostname === "[::1]" ||
+      hostname === "[::]" ||
+      hostname.startsWith("[fc") ||
+      hostname.startsWith("[fd") ||
+      hostname.startsWith("[fe8") ||
+      hostname.startsWith("[fe9") ||
+      hostname.startsWith("[fea") ||
+      hostname.startsWith("[feb")
+    ) {
+      return false;
+    }
+
+    if (hostname === "localhost") return false;
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function stringValue(value: unknown, fallback = ""): string {
   return typeof value === "string" && value.trim().length > 0
     ? value.trim()
@@ -83,6 +119,9 @@ async function markProcessed(
 }
 
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  if (!isSafeUrl(url)) {
+    throw new Error(`Unsafe webhook URL: ${url}`);
+  }
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +129,7 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    redirect: "error", // Prevent SSRF bypasses via redirects
   });
 }
 
