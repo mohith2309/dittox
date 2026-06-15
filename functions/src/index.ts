@@ -82,13 +82,49 @@ async function markProcessed(
   );
 }
 
+function isSafeWebhookUrl(urlString: string): boolean {
+  try {
+    const parsed = new URL(urlString);
+    const hostname = parsed.hostname.toLowerCase();
+
+    // Check for explicit local/private domains
+    if (hostname === "localhost") return false;
+
+    // Check for IPv6 loopback (parsed.hostname keeps brackets)
+    if (hostname === "[::1]" || hostname === "[0000:0000:0000:0000:0000:0000:0000:0001]") return false;
+
+    // Check for IPv4 private, loopback, and metadata ranges using strict full matches
+    const ipv4RegexList = [
+      /^(?:127\.\d{1,3}\.\d{1,3}\.\d{1,3})$/, // 127.0.0.0/8
+      /^(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3})$/,  // 10.0.0.0/8
+      /^(?:172\.(?:1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3})$/, // 172.16.0.0/12
+      /^(?:192\.168\.\d{1,3}\.\d{1,3})$/, // 192.168.0.0/16
+      /^(?:169\.254\.\d{1,3}\.\d{1,3})$/  // 169.254.0.0/16 (metadata)
+    ];
+
+    for (const regex of ipv4RegexList) {
+      if (regex.test(hostname)) {
+        return false;
+      }
+    }
+
+    return true;
+  } catch (err) {
+    return false; // Invalid URL structure
+  }
+}
+
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  if (!isSafeWebhookUrl(url)) {
+    throw new Error(`SSRF Prevention: Unsafe webhook URL blocked: ${url}`);
+  }
   return fetch(url, {
     method: "POST",
     headers: {
       "content-type": "application/json",
       "user-agent": "dittox-firebase-functions",
     },
+    redirect: "error", // Prevent redirect bypass
     body: JSON.stringify(payload),
   });
 }
