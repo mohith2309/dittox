@@ -1,0 +1,3 @@
+## 2024-06-15 - Material Splash Effect Issue
+**Learning:** In Flutter, wrapping an `InkWell` directly inside a `Container` with a background `color` obscures the material splash/ripple effect. The splash is painted on the `Material` widget that provides the `InkWell`, so an opaque container covering the `Material` hides the splash.
+**Action:** When creating custom buttons with `InkWell`, use an `Ink` widget inside the `InkWell` for colored backgrounds, or use a `Material` widget instead of a `Container` with a color, to ensure the ripple effect is visible. This is a common pattern for accessible, delightful touch interactions.
