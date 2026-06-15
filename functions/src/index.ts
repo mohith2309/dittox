@@ -82,7 +82,31 @@ async function markProcessed(
   );
 }
 
+function isRestrictedUrl(urlString: string): boolean {
+  try {
+    const parsed = new URL(urlString);
+    const hostname = parsed.hostname;
+
+    // Block localhost and IPv6 localhost
+    if (hostname === "localhost" || hostname === "[::1]") return true;
+
+    // Block IPv4 private/local addresses strictly
+    const ipv4Pattern = /^(?:127\.\d{1,3}\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|169\.254\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3})$/;
+    if (ipv4Pattern.test(hostname)) return true;
+
+    return false;
+  } catch {
+    // If URL is unparseable, treat as restricted to be safe
+    return true;
+  }
+}
+
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  // 🛡️ Defense-in-depth: Validate URL to prevent SSRF against internal/metadata endpoints.
+  if (isRestrictedUrl(url)) {
+    throw new Error("Invalid or restricted webhook URL");
+  }
+
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +114,8 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    // 🛡️ Defense-in-depth: Prevent open redirects from bypassing SSRF protections
+    redirect: "error",
   });
 }
 
