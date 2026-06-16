@@ -82,7 +82,38 @@ async function markProcessed(
   );
 }
 
+function isSafeWebhookUrl(urlString: string): boolean {
+  try {
+    const parsed = new URL(urlString);
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return false;
+
+    const hostname = parsed.hostname;
+
+    if (hostname === "localhost") return false;
+
+    // IPv6
+    if (hostname.startsWith("[") && hostname.endsWith("]")) {
+      if (hostname === "[::1]") return false;
+      if (hostname.startsWith("[fc") || hostname.startsWith("[fd") || hostname.startsWith("[fe8")) return false;
+    }
+
+    // IPv4 private networks and loopback
+    if (/^(?:10|127)\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname)) return false;
+    if (/^169\.254\.\d{1,3}\.\d{1,3}$/.test(hostname)) return false;
+    if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname)) return false;
+    if (/^172\.(?:1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(hostname)) return false;
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  if (!isSafeWebhookUrl(url)) {
+    throw new Error(`Unsafe webhook URL rejected to prevent SSRF`);
+  }
+
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +121,7 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    redirect: "error",
   });
 }
 
