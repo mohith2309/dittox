@@ -33,6 +33,34 @@ const collections = {
   supplierReorders: "supplier_reorders",
 };
 
+function isSafeUrl(urlString: string): boolean {
+  try {
+    const parsedUrl = new URL(urlString);
+    const hostname = parsedUrl.hostname;
+
+    if (hostname === "localhost") return false;
+    if (hostname === "[::1]") return false;
+
+    const restrictedIpRanges = [
+      /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/,
+      /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/,
+      /^192\.168\.\d{1,3}\.\d{1,3}$/,
+      /^172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}$/,
+      /^169\.254\.\d{1,3}\.\d{1,3}$/
+    ];
+
+    for (const regex of restrictedIpRanges) {
+      if (regex.test(hostname)) {
+        return false;
+      }
+    }
+
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 function stringValue(value: unknown, fallback = ""): string {
   return typeof value === "string" && value.trim().length > 0
     ? value.trim()
@@ -83,6 +111,10 @@ async function markProcessed(
 }
 
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  if (!isSafeUrl(url)) {
+    throw new Error(`Unsafe webhook URL blocked: ${url}`);
+  }
+
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +122,7 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    redirect: "error",
   });
 }
 
