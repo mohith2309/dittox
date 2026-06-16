@@ -1,0 +1,4 @@
+## 2025-02-18 - SSRF Vulnerability in Webhook Processing
+**Vulnerability:** The `processWebhookOutbox` function allowed outbound HTTP requests to arbitrarily provided user URLs (via `data.targetUrl`) without validation, allowing attackers to reach internal IPs or cloud metadata endpoints.
+**Learning:** By default, `fetch()` in Node.js respects redirects and can access any IP. Native `URL` parsing is critical to normalize obfuscated IPs (like `012.0.0.1` -> `10.0.0.1`) before validating the hostname against private/local CIDR block regexes.
+**Prevention:** Always parse outbound user-provided URLs with the `URL` object and validate the hostname against blocked private and local IPv4/IPv6 ranges. Additionally, always pass `redirect: "error"` to `fetch` to prevent Time-of-Check to Time-of-Use (TOCTOU) bypasses via malicious redirect responses.
