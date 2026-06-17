@@ -20,19 +20,23 @@ class CustomIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onPressed,
-      child: Container(
-          decoration: BoxDecoration(
-              color: backGroundColor,
-              borderRadius: BorderRadius.circular(size / 2)),
-          height: size.toDouble(),
-          width: size.toDouble(),
+    return Ink(
+      decoration: BoxDecoration(
+          color: backGroundColor,
+          borderRadius: BorderRadius.circular(size / 2)),
+      height: size.toDouble(),
+      width: size.toDouble(),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(size / 2),
+        onTap: onPressed,
+        child: Center(
           child: FaIcon(
             icon,
             color: iconColor,
             size: iconSize.toDouble(),
-          )),
+          ),
+        ),
+      ),
     );
   }
 }
