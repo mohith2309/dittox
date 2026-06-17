@@ -82,7 +82,42 @@ async function markProcessed(
   );
 }
 
+function isSafeWebhookUrl(urlString: string): boolean {
+  try {
+    const parsedUrl = new URL(urlString);
+    if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+      return false;
+    }
+
+    const hostname = parsedUrl.hostname.toLowerCase();
+
+    // Block localhost
+    if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]") {
+      return false;
+    }
+
+    // Block cloud metadata endpoint
+    if (hostname === "169.254.169.254") {
+      return false;
+    }
+
+    // Block private IPv4 ranges
+    const isPrivateIP = /^(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})$/.test(hostname);
+    if (isPrivateIP) {
+      return false;
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  if (!isSafeWebhookUrl(url)) {
+    throw new Error("Invalid or unsafe webhook URL");
+  }
+
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +125,7 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    redirect: "error",
   });
 }
 

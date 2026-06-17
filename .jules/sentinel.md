@@ -1,0 +1,4 @@
+## 2024-06-17 - SSRF Protection for Webhooks
+**Vulnerability:** The application was vulnerable to Server-Side Request Forgery (SSRF) due to sending outbound POST requests to user-provided webhook URLs without validating the target domain or IP.
+**Learning:** Node.js fetch API can be tricked to query local resources (e.g. cloud metadata at 169.254.169.254 or private IP ranges like 10.x.x.x) if webhook URLs are not strictly sanitized. Also, the `redirect` property in fetch defaults to `follow`, which could bypass initial validation if the attacker sets up a malicious external server that redirects back to a private IP.
+**Prevention:** Always parse untrusted URLs using the native `URL` class and strictly block dangerous hostnames, IP ranges, and protocols. Configure `fetch` to use `redirect: 'error'` to block server-side redirect bypasses.
