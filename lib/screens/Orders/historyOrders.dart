@@ -18,6 +18,7 @@ import '../../utils/security_utils.dart';
 import '../../utils/search_history_store.dart';
 import '../additional/feedback_screen.dart';
 import 'order_tracking_screen.dart';
+import '../../utils/app_optimizations.dart';
 import '../../widgets/Cart/History_item.dart';
 import '../../widgets/Cart/no_items.dart';
 import '../../widgets/common/pill_appbar_title.dart';
@@ -39,6 +40,7 @@ class _HistoryOrdersState extends State<HistoryOrders> {
   String _query = "";
   String _sortMode = "newest";
   final TextEditingController _searchController = TextEditingController();
+  final Debouncer _searchDebouncer = Debouncer(milliseconds: 300);
   List<String> _recentSearches = const <String>[];
   List<String> _archivedOrderIds = const <String>[];
   Map<String, dynamic> _collectedPhotos = const <String, dynamic>{};
@@ -76,9 +78,11 @@ class _HistoryOrdersState extends State<HistoryOrders> {
 
     final out = merged.values.toList();
     out.sort((a, b) {
-      final aDate = DateTime.tryParse((a["orderDate"] ?? "").toString()) ??
+      final aDate =
+          DateTime.tryParse((a["orderDate"] ?? "").toString()) ??
           DateTime.fromMillisecondsSinceEpoch(0);
-      final bDate = DateTime.tryParse((b["orderDate"] ?? "").toString()) ??
+      final bDate =
+          DateTime.tryParse((b["orderDate"] ?? "").toString()) ??
           DateTime.fromMillisecondsSinceEpoch(0);
       return bDate.compareTo(aDate);
     });
@@ -87,16 +91,19 @@ class _HistoryOrdersState extends State<HistoryOrders> {
 
   Future<List<Map<String, dynamic>>> _localHistoryFast() async {
     final localOrders = await DemoOrdersStore.getOrders();
-    final filtered =
-        localOrders.map((e) => Map<String, dynamic>.from(e)).where((order) {
-      final status = (order["status"] ?? "").toString().toLowerCase();
-      return status != "rejected" && status != "failed";
-    }).toList();
+    final filtered = localOrders.map((e) => Map<String, dynamic>.from(e)).where(
+      (order) {
+        final status = (order["status"] ?? "").toString().toLowerCase();
+        return status != "rejected" && status != "failed";
+      },
+    ).toList();
 
     filtered.sort((a, b) {
-      final aDate = DateTime.tryParse((a["orderDate"] ?? "").toString()) ??
+      final aDate =
+          DateTime.tryParse((a["orderDate"] ?? "").toString()) ??
           DateTime.fromMillisecondsSinceEpoch(0);
-      final bDate = DateTime.tryParse((b["orderDate"] ?? "").toString()) ??
+      final bDate =
+          DateTime.tryParse((b["orderDate"] ?? "").toString()) ??
           DateTime.fromMillisecondsSinceEpoch(0);
       return bDate.compareTo(aDate);
     });
@@ -113,6 +120,7 @@ class _HistoryOrdersState extends State<HistoryOrders> {
 
   @override
   void dispose() {
+    _searchDebouncer.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -143,8 +151,10 @@ class _HistoryOrdersState extends State<HistoryOrders> {
       _asText(order["orderId"], fallback: _asText(order["_Id"]));
 
   Future<void> _toggleFavoriteStore(Map<String, dynamic> order) async {
-    final storeId =
-        _asText(order["storeId"], fallback: _asText(order["storeName"]));
+    final storeId = _asText(
+      order["storeId"],
+      fallback: _asText(order["storeName"]),
+    );
     final storeName = _asText(order["storeName"], fallback: "Store");
     if (storeId.isEmpty) return;
     final added = await FavoriteStoresStore.toggle(
@@ -157,9 +167,12 @@ class _HistoryOrdersState extends State<HistoryOrders> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-          content: Text(added
+        content: Text(
+          added
               ? "$storeName added to favorites"
-              : "$storeName removed from favorites")),
+              : "$storeName removed from favorites",
+        ),
+      ),
     );
   }
 
@@ -176,7 +189,8 @@ class _HistoryOrdersState extends State<HistoryOrders> {
           children: [
             ListTile(
               leading: Icon(
-                  isArchived ? Icons.unarchive_rounded : Icons.archive_rounded),
+                isArchived ? Icons.unarchive_rounded : Icons.archive_rounded,
+              ),
               title: Text(isArchived ? "Unarchive order" : "Archive order"),
               subtitle: Text(orderId.isEmpty ? "No order id" : orderId),
               onTap: () async {
@@ -194,9 +208,10 @@ class _HistoryOrdersState extends State<HistoryOrders> {
               leading: const Icon(Icons.image_rounded),
               title: const Text("Attach collection photo"),
               subtitle: Text(
-                  _collectedPhotos[orderId]?.toString().isEmpty == false
-                      ? "Photo already attached"
-                      : "Proof of pickup or receipt"),
+                _collectedPhotos[orderId]?.toString().isEmpty == false
+                    ? "Photo already attached"
+                    : "Proof of pickup or receipt",
+              ),
               onTap: () {
                 Navigator.pop(context);
                 _attachCollectedPhoto(order);
@@ -218,7 +233,8 @@ class _HistoryOrdersState extends State<HistoryOrders> {
                 if (orderId.isEmpty || _asText(order["storeId"]).isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                        content: Text('This order cannot be reviewed yet.')),
+                      content: Text('This order cannot be reviewed yet.'),
+                    ),
                   );
                   return;
                 }
@@ -248,13 +264,16 @@ class _HistoryOrdersState extends State<HistoryOrders> {
               onTap: () {
                 Navigator.pop(context);
                 _searchController.text = storeName;
+                _searchDebouncer.cancel();
                 setState(() => _query = storeName);
                 _rememberSearch(storeName);
               },
             ),
             ListTile(
-              leading:
-                  const Icon(Icons.route_rounded, color: ColorPallets.deepBlue),
+              leading: const Icon(
+                Icons.route_rounded,
+                color: ColorPallets.deepBlue,
+              ),
               title: const Text("Track Order"),
               subtitle: const Text("View order timeline and shop details"),
               onTap: () {
@@ -292,9 +311,9 @@ class _HistoryOrdersState extends State<HistoryOrders> {
     await EngagementStore.saveCollectedPhoto(orderId, path);
     await _loadHistoryExtras();
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Collection photo saved')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Collection photo saved')));
   }
 
   Future<void> _copyOrderSummary(Map<String, dynamic> order) async {
@@ -308,27 +327,30 @@ class _HistoryOrdersState extends State<HistoryOrders> {
     ].join('\n');
     await Clipboard.setData(ClipboardData(text: summary));
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Order summary copied')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Order summary copied')));
   }
 
   Future<void> _copyHistoryCsv() async {
     final orders = _visibleOrders;
-    final buffer =
-        StringBuffer('order_id,store,status,pages,amount,date,archived\n');
+    final buffer = StringBuffer(
+      'order_id,store,status,pages,amount,date,archived\n',
+    );
     for (final order in orders) {
       String cell(dynamic value) => '"${_asText(value).replaceAll('"', '""')}"';
       final id = _orderId(order);
-      buffer.writeln([
-        cell(id),
-        cell(order['storeName']),
-        cell(order['status']),
-        cell(order['totalPages']),
-        cell(order['totalCost']),
-        cell(order['orderDate']),
-        cell(_archivedOrderIds.contains(id) ? 'yes' : 'no'),
-      ].join(','));
+      buffer.writeln(
+        [
+          cell(id),
+          cell(order['storeName']),
+          cell(order['status']),
+          cell(order['totalPages']),
+          cell(order['totalCost']),
+          cell(order['orderDate']),
+          cell(_archivedOrderIds.contains(id) ? 'yes' : 'no'),
+        ].join(','),
+      );
     }
     await Clipboard.setData(ClipboardData(text: buffer.toString()));
     if (!mounted) return;
@@ -455,15 +477,13 @@ class _HistoryOrdersState extends State<HistoryOrders> {
 
     final allOrder = <Map<String, dynamic>>[];
     try {
-      final uri =
-          SecurityUtils.safeWebUri('${ApiEndPoiunts.baseUrl}/orders/list');
+      final uri = SecurityUtils.safeWebUri(
+        '${ApiEndPoiunts.baseUrl}/orders/list',
+      );
       if (uri == null) return local;
 
       final response = await http
-          .get(
-            uri,
-            headers: SecurityUtils.authHeaders(widget.accessToken),
-          )
+          .get(uri, headers: SecurityUtils.authHeaders(widget.accessToken))
           .timeout(const Duration(seconds: 4));
 
       if (response.statusCode == 200) {
@@ -547,20 +567,27 @@ class _HistoryOrdersState extends State<HistoryOrders> {
         .whereType<Map>()
         .map((e) => Map<String, dynamic>.from(e))
         .where((order) {
-      final status = _asText(order["status"]).toLowerCase();
-      final isArchived = _archivedOrderIds.contains(_orderId(order));
-      if (!_showArchived && isArchived) return false;
-      return normalizedQuery.isEmpty ||
-          _asText(order["orderId"]).toLowerCase().contains(normalizedQuery) ||
-          _asText(order["_Id"]).toLowerCase().contains(normalizedQuery) ||
-          _asText(order["storeName"]).toLowerCase().contains(normalizedQuery) ||
-          status.contains(normalizedQuery);
-    }).toList();
+          final status = _asText(order["status"]).toLowerCase();
+          final isArchived = _archivedOrderIds.contains(_orderId(order));
+          if (!_showArchived && isArchived) return false;
+          return normalizedQuery.isEmpty ||
+              _asText(
+                order["orderId"],
+              ).toLowerCase().contains(normalizedQuery) ||
+              _asText(order["_Id"]).toLowerCase().contains(normalizedQuery) ||
+              _asText(
+                order["storeName"],
+              ).toLowerCase().contains(normalizedQuery) ||
+              status.contains(normalizedQuery);
+        })
+        .toList();
 
     filtered.sort((a, b) {
-      final aDate = DateTime.tryParse(_asText(a["orderDate"])) ??
+      final aDate =
+          DateTime.tryParse(_asText(a["orderDate"])) ??
           DateTime.fromMillisecondsSinceEpoch(0);
-      final bDate = DateTime.tryParse(_asText(b["orderDate"])) ??
+      final bDate =
+          DateTime.tryParse(_asText(b["orderDate"])) ??
           DateTime.fromMillisecondsSinceEpoch(0);
       final aAmount = _asDouble(a["totalCost"]);
       final bAmount = _asDouble(b["totalCost"]);
@@ -622,14 +649,18 @@ class _HistoryOrdersState extends State<HistoryOrders> {
     return Scaffold(
       appBar: AppBar(
         title: const PillAppBarTitle(
-            title: 'Order History', icon: Icons.history_rounded),
+          title: 'Order History',
+          icon: Icons.history_rounded,
+        ),
         actions: [
           IconButton(
             tooltip: _showArchived ? 'Hide Archived' : 'Show Archived',
             onPressed: () => setState(() => _showArchived = !_showArchived),
-            icon: Icon(_showArchived
-                ? Icons.inventory_2_rounded
-                : Icons.inventory_2_outlined),
+            icon: Icon(
+              _showArchived
+                  ? Icons.inventory_2_rounded
+                  : Icons.inventory_2_outlined,
+            ),
           ),
           IconButton(
             tooltip: 'Copy CSV Export',
@@ -645,9 +676,9 @@ class _HistoryOrdersState extends State<HistoryOrders> {
             tooltip: 'Test Push',
             onPressed: () {
               context.read<AppNotifications>().addInfo(
-                    title: 'Test push notification',
-                    body: 'Samsung popup + inbox flow verification.',
-                  );
+                title: 'Test push notification',
+                body: 'Samsung popup + inbox flow verification.',
+              );
               if (!mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Test notification triggered')),
@@ -657,7 +688,9 @@ class _HistoryOrdersState extends State<HistoryOrders> {
           ),
           IconButton(icon: const Icon(Icons.refresh), onPressed: _fetchOrders),
           IconButton(
-              icon: const Icon(Icons.delete_outline), onPressed: _clearHistory),
+            icon: const Icon(Icons.delete_outline),
+            onPressed: _clearHistory,
+          ),
         ],
       ),
       body: RefreshIndicator(
@@ -665,30 +698,30 @@ class _HistoryOrdersState extends State<HistoryOrders> {
         child: isLoading
             ? const Center(child: CircularProgressIndicator())
             : _orders.isEmpty
-                ? ListView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    children: const [
-                      SizedBox(height: 180),
-                      Center(child: NoOrders()),
-                    ],
-                  )
-                : ListView.builder(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    itemCount: visibleOrders.length + 1,
-                    itemBuilder: (context, index) {
-                      if (index == 0) {
-                        return _buildSearchAndSortCard(visibleOrders.length);
-                      }
-                      final order = visibleOrders[index - 1];
-                      return GestureDetector(
-                        onLongPress: () => _showHistoryQuickActions(order),
-                        child: HistoryCard(
-                          historyXeroxItem: order,
-                          accesstoken: widget.accessToken,
-                        ),
-                      );
-                    },
-                  ),
+            ? ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: const [
+                  SizedBox(height: 180),
+                  Center(child: NoOrders()),
+                ],
+              )
+            : ListView.builder(
+                physics: const AlwaysScrollableScrollPhysics(),
+                itemCount: visibleOrders.length + 1,
+                itemBuilder: (context, index) {
+                  if (index == 0) {
+                    return _buildSearchAndSortCard(visibleOrders.length);
+                  }
+                  final order = visibleOrders[index - 1];
+                  return GestureDetector(
+                    onLongPress: () => _showHistoryQuickActions(order),
+                    child: HistoryCard(
+                      historyXeroxItem: order,
+                      accesstoken: widget.accessToken,
+                    ),
+                  );
+                },
+              ),
       ),
     );
   }
@@ -735,7 +768,10 @@ class _HistoryOrdersState extends State<HistoryOrders> {
             TextField(
               controller: _searchController,
               textInputAction: TextInputAction.search,
-              onChanged: (value) => setState(() => _query = value),
+              // Optimize: Use Debouncer to delay the search state update and prevent
+              // unnecessary re-renders of the large order list on every single keystroke.
+              onChanged: (value) =>
+                  _searchDebouncer.run(() => setState(() => _query = value)),
               onSubmitted: _rememberSearch,
               decoration: InputDecoration(
                 hintText: "Search history by order id, shop, or status",
@@ -745,6 +781,7 @@ class _HistoryOrdersState extends State<HistoryOrders> {
                     : IconButton(
                         onPressed: () {
                           _searchController.clear();
+                          _searchDebouncer.cancel();
                           setState(() => _query = "");
                         },
                         icon: const Icon(Icons.clear),
@@ -768,6 +805,7 @@ class _HistoryOrdersState extends State<HistoryOrders> {
                       label: Text(recent),
                       onPressed: () {
                         _searchController.text = recent;
+                        _searchDebouncer.cancel();
                         setState(() => _query = recent);
                       },
                     );
