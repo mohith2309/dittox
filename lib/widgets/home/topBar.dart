@@ -205,7 +205,7 @@ class TopCont extends StatelessWidget {
                         onTap: () {
                           Navigator.of(context).pushNamed(SetLocationMaps.routeName);
                         },
-                        child: Container(
+                        child: Ink(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 12,
                             vertical: 10,
@@ -254,7 +254,7 @@ class TopCont extends StatelessWidget {
                       child: Stack(
                         clipBehavior: Clip.none,
                         children: [
-                          Container(
+                          Ink(
                             width: 44,
                             height: 44,
                             decoration: BoxDecoration(
