@@ -1,0 +1,3 @@
+## 2026-06-18 - Debouncing Search Inputs to Avoid Re-renders
+**Learning:** In Flutter, tying text input directly to state (`setState` on `onChanged`) can trigger highly expensive synchronous operations (like filtering large lists of shops or orders locally) and visual re-renders for every single keystroke. Even simple filtering algorithms become noticeably slow when called rapidly by fast typing.
+**Action:** Always wrap `onChanged` handlers for text inputs with a `Debouncer` class (like `Debouncer(milliseconds: 300)`) when the state update drives complex logic or widget rebuilds. Ensure the debouncer is properly disposed and cancelled on explicit actions (e.g. clearing search text via button) to prevent stale updates.
