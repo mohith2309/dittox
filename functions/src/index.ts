@@ -82,8 +82,40 @@ async function markProcessed(
   );
 }
 
+// Security: Validate URLs to prevent Server-Side Request Forgery (SSRF)
+function isSafeWebhookUrl(urlString: string): boolean {
+  try {
+    const parsed = new URL(urlString);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
+
+    const h = parsed.hostname.toLowerCase();
+    if (h === "localhost" || h === "[::1]" || h === "[0:0:0:0:0:0:0:1]") return false;
+
+    const ipv4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+    const match = h.match(ipv4);
+    if (match) {
+      const p1 = parseInt(match[1], 10);
+      const p2 = parseInt(match[2], 10);
+      if (p1 === 127 || p1 === 10) return false;
+      if (p1 === 169 && p2 === 254) return false;
+      if (p1 === 172 && p2 >= 16 && p2 <= 31) return false;
+      if (p1 === 192 && p2 === 168) return false;
+    }
+
+    if (h.startsWith("[fe80:") || h.startsWith("[fc") || h.startsWith("[fd")) return false;
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  if (!isSafeWebhookUrl(url)) {
+    throw new Error(`Unsafe webhook URL blocked: ${url}`);
+  }
   return fetch(url, {
+    redirect: "error", // Security: Prevent attackers from bypassing validation via HTTP redirects
     method: "POST",
     headers: {
       "content-type": "application/json",
