@@ -82,7 +82,46 @@ async function markProcessed(
   );
 }
 
+function isSafeUrl(urlString: string): boolean {
+  try {
+    const url = new URL(urlString);
+    if (url.protocol !== "https:" && url.protocol !== "http:") return false;
+
+    const hostname = url.hostname;
+
+    // Block localhost
+    if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]") {
+      return false;
+    }
+
+    // Block IPv4 private/internal IP ranges
+    const ipv4Pattern = /^(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|169\.254\.\d{1,3}\.\d{1,3})$/;
+    if (ipv4Pattern.test(hostname)) {
+      return false;
+    }
+
+    // Block IPv6 private/internal IP ranges
+    const ipv6Pattern = /^\[(?:fd|fc|fe80|::ffff:127|::ffff:10|::ffff:172|::ffff:192|::1).*\]$/i;
+    if (ipv6Pattern.test(hostname)) {
+      return false;
+    }
+
+    // Block cloud metadata endpoints
+    if (hostname === "169.254.169.254" || hostname === "metadata.google.internal") {
+      return false;
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  if (!isSafeUrl(url)) {
+    throw new Error("Unsafe webhook URL rejected");
+  }
+
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +129,7 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    redirect: "error",
   });
 }
 
