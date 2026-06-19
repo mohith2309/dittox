@@ -1,0 +1,4 @@
+## 2024-06-19 - SSRF Prevention in Webhooks
+**Vulnerability:** The `sendWebhook` function in Cloud Functions accepted arbitrary user-provided URLs without validation, allowing Server-Side Request Forgery (SSRF). Attackers could use this to probe internal networks or cloud metadata endpoints.
+**Learning:** Cloud environments often have highly sensitive metadata endpoints (e.g., 169.254.169.254) accessible without auth from internal resources. `fetch` default behavior will blindly follow redirects, meaning an attacker could provide a safe-looking external URL that responds with a 302 redirect to an internal IP, bypassing simple URL validation.
+**Prevention:** Always validate `URL.hostname` against localhost, loopback, private IP ranges (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16), and metadata IPs using strict regex. Additionally, ALWAYS pass `redirect: "error"` to `fetch` options when requesting untrusted URLs to prevent redirect bypasses.
