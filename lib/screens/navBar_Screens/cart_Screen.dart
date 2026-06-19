@@ -14,6 +14,7 @@ import "../../utils/favorite_stores_store.dart";
 import "../../utils/orders_cache_store.dart";
 import "../../utils/security_utils.dart";
 import "../../utils/search_history_store.dart";
+import "../../utils/app_optimizations.dart";
 import "../../widgets/Cart/onGoing_xerox_Item.dart";
 import '../../widgets/common/pill_appbar_title.dart';
 
@@ -41,6 +42,7 @@ class _CartScreenState extends State<CartScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocus = FocusNode();
   List<String> _recentSearches = const <String>[];
+  final _debouncer = Debouncer(milliseconds: 300);
 
   double? _cachedPaddingV;
   double? _cachedPaddingH;
@@ -70,6 +72,7 @@ class _CartScreenState extends State<CartScreen> {
 
   @override
   void dispose() {
+    _debouncer.dispose();
     _searchController.dispose();
     _searchFocus.dispose();
     super.dispose();
@@ -588,8 +591,9 @@ class _CartScreenState extends State<CartScreen> {
                                   controller: _searchController,
                                   focusNode: _searchFocus,
                                   textInputAction: TextInputAction.search,
+                                  // ⚡ Bolt: Debounce search input to reduce rebuilds
                                   onChanged: (value) =>
-                                      setState(() => _query = value),
+                                      _debouncer.run(() => setState(() => _query = value)),
                                   onSubmitted: _rememberSearch,
                                   decoration: InputDecoration(
                                     hintText:
@@ -599,6 +603,7 @@ class _CartScreenState extends State<CartScreen> {
                                         ? null
                                         : IconButton(
                                             onPressed: () {
+                                              _debouncer.cancel();
                                               _searchController.clear();
                                               setState(() => _query = "");
                                             },
