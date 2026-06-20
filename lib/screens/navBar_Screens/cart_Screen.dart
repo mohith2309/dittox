@@ -14,6 +14,7 @@ import "../../utils/favorite_stores_store.dart";
 import "../../utils/orders_cache_store.dart";
 import "../../utils/security_utils.dart";
 import "../../utils/search_history_store.dart";
+import "../../utils/app_optimizations.dart";
 import "../../widgets/Cart/onGoing_xerox_Item.dart";
 import '../../widgets/common/pill_appbar_title.dart';
 
@@ -40,6 +41,12 @@ class _CartScreenState extends State<CartScreen> {
   String _sortMode = "newest";
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocus = FocusNode();
+
+  // ⚡ Bolt: Debounce search input to prevent expensive list filtering and
+  // redundant widget rebuilds on every keystroke.
+  // Impact: Reduces main thread blocking during rapid typing.
+  final _debouncer = Debouncer(milliseconds: 300);
+
   List<String> _recentSearches = const <String>[];
 
   double? _cachedPaddingV;
@@ -70,6 +77,7 @@ class _CartScreenState extends State<CartScreen> {
 
   @override
   void dispose() {
+    _debouncer.dispose();
     _searchController.dispose();
     _searchFocus.dispose();
     super.dispose();
@@ -88,8 +96,10 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   Future<void> _toggleFavoriteStore(Map<String, dynamic> order) async {
-    final storeId =
-        _asText(order["storeId"], fallback: _asText(order["storeName"]));
+    final storeId = _asText(
+      order["storeId"],
+      fallback: _asText(order["storeName"]),
+    );
     final storeName = _asText(order["storeName"], fallback: "Store");
     if (storeId.isEmpty) return;
     final added = await FavoriteStoresStore.toggle(
@@ -102,9 +112,12 @@ class _CartScreenState extends State<CartScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-          content: Text(added
+        content: Text(
+          added
               ? "$storeName added to favorites"
-              : "$storeName removed from favorites")),
+              : "$storeName removed from favorites",
+        ),
+      ),
     );
   }
 
@@ -160,8 +173,8 @@ class _CartScreenState extends State<CartScreen> {
     });
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-          content:
-              Text(updated ? "Order cancelled" : "Order cancelled locally")),
+        content: Text(updated ? "Order cancelled" : "Order cancelled locally"),
+      ),
     );
   }
 
@@ -189,6 +202,7 @@ class _CartScreenState extends State<CartScreen> {
               title: const Text("Search this store"),
               onTap: () {
                 Navigator.pop(context);
+                _debouncer.cancel();
                 _searchController.text = storeName;
                 setState(() => _query = storeName);
                 _rememberSearch(storeName);
@@ -241,9 +255,11 @@ class _CartScreenState extends State<CartScreen> {
 
     final out = merged.values.toList();
     out.sort((a, b) {
-      final aDate = DateTime.tryParse((a["orderDate"] ?? "").toString()) ??
+      final aDate =
+          DateTime.tryParse((a["orderDate"] ?? "").toString()) ??
           DateTime.fromMillisecondsSinceEpoch(0);
-      final bDate = DateTime.tryParse((b["orderDate"] ?? "").toString()) ??
+      final bDate =
+          DateTime.tryParse((b["orderDate"] ?? "").toString()) ??
           DateTime.fromMillisecondsSinceEpoch(0);
       return bDate.compareTo(aDate);
     });
@@ -252,19 +268,23 @@ class _CartScreenState extends State<CartScreen> {
 
   Future<List<Map<String, dynamic>>> _loadLocalOngoingFast() async {
     final localOrders = await DemoOrdersStore.getOrders();
-    final localOngoing =
-        localOrders.map((e) => Map<String, dynamic>.from(e)).where((order) {
-      final status = (order["status"] ?? "").toString().toLowerCase();
-      return status != "collected" &&
-          status != "completed" &&
-          status != "rejected" &&
-          status != "failed";
-    }).toList();
+    final localOngoing = localOrders
+        .map((e) => Map<String, dynamic>.from(e))
+        .where((order) {
+          final status = (order["status"] ?? "").toString().toLowerCase();
+          return status != "collected" &&
+              status != "completed" &&
+              status != "rejected" &&
+              status != "failed";
+        })
+        .toList();
 
     localOngoing.sort((a, b) {
-      final aDate = DateTime.tryParse((a["orderDate"] ?? "").toString()) ??
+      final aDate =
+          DateTime.tryParse((a["orderDate"] ?? "").toString()) ??
           DateTime.fromMillisecondsSinceEpoch(0);
-      final bDate = DateTime.tryParse((b["orderDate"] ?? "").toString()) ??
+      final bDate =
+          DateTime.tryParse((b["orderDate"] ?? "").toString()) ??
           DateTime.fromMillisecondsSinceEpoch(0);
       return bDate.compareTo(aDate);
     });
@@ -351,18 +371,22 @@ class _CartScreenState extends State<CartScreen> {
   Future<List<dynamic>> collectAllOnGoingOrders() async {
     final allOrder = <Map<String, dynamic>>[];
     final localOrders = await DemoOrdersStore.getOrders();
-    final localOngoing =
-        localOrders.map((e) => Map<String, dynamic>.from(e)).where((order) {
-      final status = (order["status"] ?? "").toString().toLowerCase();
-      return status != "collected" && status != "completed";
-    }).toList();
+    final localOngoing = localOrders
+        .map((e) => Map<String, dynamic>.from(e))
+        .where((order) {
+          final status = (order["status"] ?? "").toString().toLowerCase();
+          return status != "collected" && status != "completed";
+        })
+        .toList();
 
     if (widget.accessToken.trim().isEmpty ||
         widget.accessToken == "demo_token") {
       localOngoing.sort((a, b) {
-        final aDate = DateTime.tryParse((a["orderDate"] ?? "").toString()) ??
+        final aDate =
+            DateTime.tryParse((a["orderDate"] ?? "").toString()) ??
             DateTime.fromMillisecondsSinceEpoch(0);
-        final bDate = DateTime.tryParse((b["orderDate"] ?? "").toString()) ??
+        final bDate =
+            DateTime.tryParse((b["orderDate"] ?? "").toString()) ??
             DateTime.fromMillisecondsSinceEpoch(0);
         return bDate.compareTo(aDate);
       });
@@ -370,14 +394,12 @@ class _CartScreenState extends State<CartScreen> {
     }
 
     try {
-      final uri =
-          SecurityUtils.safeWebUri('${ApiEndPoiunts.baseUrl}/orders/list');
+      final uri = SecurityUtils.safeWebUri(
+        '${ApiEndPoiunts.baseUrl}/orders/list',
+      );
       if (uri == null) return localOngoing;
       final response = await http
-          .get(
-            uri,
-            headers: SecurityUtils.authHeaders(widget.accessToken),
-          )
+          .get(uri, headers: SecurityUtils.authHeaders(widget.accessToken))
           .timeout(const Duration(seconds: 4));
 
       if (response.statusCode == 200) {
@@ -446,9 +468,11 @@ class _CartScreenState extends State<CartScreen> {
 
     final mergedList = merged.values.toList();
     mergedList.sort((a, b) {
-      final aDate = DateTime.tryParse((a["orderDate"] ?? "").toString()) ??
+      final aDate =
+          DateTime.tryParse((a["orderDate"] ?? "").toString()) ??
           DateTime.fromMillisecondsSinceEpoch(0);
-      final bDate = DateTime.tryParse((b["orderDate"] ?? "").toString()) ??
+      final bDate =
+          DateTime.tryParse((b["orderDate"] ?? "").toString()) ??
           DateTime.fromMillisecondsSinceEpoch(0);
       return bDate.compareTo(aDate);
     });
@@ -476,7 +500,8 @@ class _CartScreenState extends State<CartScreen> {
         .toList();
     final filtered = source.where((order) {
       final status = _asText(order["status"]).toLowerCase();
-      final queryMatch = normalizedQuery.isEmpty ||
+      final queryMatch =
+          normalizedQuery.isEmpty ||
           _asText(order["orderId"]).toLowerCase().contains(normalizedQuery) ||
           _asText(order["storeName"]).toLowerCase().contains(normalizedQuery) ||
           status.contains(normalizedQuery);
@@ -485,9 +510,11 @@ class _CartScreenState extends State<CartScreen> {
     }).toList();
 
     filtered.sort((a, b) {
-      final aDate = DateTime.tryParse(_asText(a["orderDate"])) ??
+      final aDate =
+          DateTime.tryParse(_asText(a["orderDate"])) ??
           DateTime.fromMillisecondsSinceEpoch(0);
-      final bDate = DateTime.tryParse(_asText(b["orderDate"])) ??
+      final bDate =
+          DateTime.tryParse(_asText(b["orderDate"])) ??
           DateTime.fromMillisecondsSinceEpoch(0);
       final aAmount = _asDouble(a["totalCost"]);
       final bAmount = _asDouble(b["totalCost"]);
@@ -540,197 +567,201 @@ class _CartScreenState extends State<CartScreen> {
         onRefresh: _fetchOrdersWithRetry,
         child: Container(
           padding: EdgeInsets.symmetric(
-              vertical: _cachedPaddingV!, horizontal: _cachedPaddingH!),
+            vertical: _cachedPaddingV!,
+            horizontal: _cachedPaddingH!,
+          ),
           child: isLoading
               ? const Center(child: CircularProgressIndicator())
               : listOrders.isEmpty
-                  ? ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.only(bottom: 88),
-                      children: const [
-                        SizedBox(height: 180),
-                        Center(child: NoOrders())
-                      ],
-                    )
-                  : ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.only(bottom: 88),
-                      children: [
-                        Card(
-                          margin: const EdgeInsets.symmetric(horizontal: 8),
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+              ? ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.only(bottom: 88),
+                  children: const [
+                    SizedBox(height: 180),
+                    Center(child: NoOrders()),
+                  ],
+                )
+              : ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.only(bottom: 88),
+                  children: [
+                    Card(
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
                               children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        "Showing: ${_visibleOrders.length} order(s)",
-                                        style: const TextStyle(
-                                          color: ColorPallets.swiggyOrange,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                    ),
-                                    Text(
-                                      "Rs ${_visibleTotalAmount.toStringAsFixed(2)}",
-                                      style: const TextStyle(
-                                        color: ColorPallets.swiggyOrange,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                TextField(
-                                  controller: _searchController,
-                                  focusNode: _searchFocus,
-                                  textInputAction: TextInputAction.search,
-                                  onChanged: (value) =>
-                                      setState(() => _query = value),
-                                  onSubmitted: _rememberSearch,
-                                  decoration: InputDecoration(
-                                    hintText:
-                                        "Search by order id, shop, or status",
-                                    prefixIcon: const Icon(Icons.search),
-                                    suffixIcon: _query.trim().isEmpty
-                                        ? null
-                                        : IconButton(
-                                            onPressed: () {
-                                              _searchController.clear();
-                                              setState(() => _query = "");
-                                            },
-                                            icon: const Icon(Icons.clear),
-                                          ),
-                                    border: const OutlineInputBorder(),
-                                    isDense: true,
-                                  ),
-                                ),
-                                if (_recentSearches.isNotEmpty) ...[
-                                  const SizedBox(height: 8),
-                                  SizedBox(
-                                    height: 34,
-                                    child: ListView.separated(
-                                      scrollDirection: Axis.horizontal,
-                                      itemCount: _recentSearches.length,
-                                      separatorBuilder: (_, __) =>
-                                          const SizedBox(width: 8),
-                                      itemBuilder: (context, index) {
-                                        final recent = _recentSearches[index];
-                                        return ActionChip(
-                                          avatar: const Icon(Icons.history,
-                                              size: 16),
-                                          label: Text(recent),
-                                          onPressed: () {
-                                            _searchController.text = recent;
-                                            setState(() => _query = recent);
-                                          },
-                                        );
-                                      },
+                                Expanded(
+                                  child: Text(
+                                    "Showing: ${_visibleOrders.length} order(s)",
+                                    style: const TextStyle(
+                                      color: ColorPallets.swiggyOrange,
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ),
-                                ],
-                                const SizedBox(height: 8),
-                                SizedBox(
-                                  height: 38,
-                                  child: ListView.separated(
-                                    scrollDirection: Axis.horizontal,
-                                    itemCount: _statusFilters.length,
-                                    separatorBuilder: (_, __) =>
-                                        const SizedBox(width: 8),
-                                    itemBuilder: (context, index) {
-                                      final filter = _statusFilters[index];
-                                      return ChoiceChip(
-                                        label: Text(filter.toUpperCase()),
-                                        selected: _statusFilter == filter,
-                                        onSelected: (_) => setState(
-                                          () => _statusFilter = filter,
-                                        ),
-                                      );
-                                    },
-                                  ),
                                 ),
-                                const SizedBox(height: 8),
-                                DropdownButtonFormField<String>(
-                                  initialValue: _sortMode,
-                                  decoration: const InputDecoration(
-                                    labelText: "Sort by",
-                                    border: OutlineInputBorder(),
-                                    isDense: true,
+                                Text(
+                                  "Rs ${_visibleTotalAmount.toStringAsFixed(2)}",
+                                  style: const TextStyle(
+                                    color: ColorPallets.swiggyOrange,
+                                    fontWeight: FontWeight.w700,
                                   ),
-                                  items: _sortModes
-                                      .map(
-                                        (mode) => DropdownMenuItem(
-                                          value: mode,
-                                          child:
-                                              Text(mode.replaceAll("_", " ")),
-                                        ),
-                                      )
-                                      .toList(),
-                                  onChanged: (value) {
-                                    if (value == null) return;
-                                    setState(() => _sortMode = value);
-                                  },
                                 ),
                               ],
                             ),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        if (_visibleOrders.isEmpty)
-                          const Padding(
-                            padding: EdgeInsets.only(top: 70),
-                            child: Center(
-                              child: NoOrders.custom(
-                                title: "No Matching Orders",
-                                subtitle:
-                                    "Try changing search text or selected status.",
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: _searchController,
+                              focusNode: _searchFocus,
+                              textInputAction: TextInputAction.search,
+                              onChanged: (value) => _debouncer.run(
+                                () => setState(() => _query = value),
+                              ),
+                              onSubmitted: _rememberSearch,
+                              decoration: InputDecoration(
+                                hintText: "Search by order id, shop, or status",
+                                prefixIcon: const Icon(Icons.search),
+                                suffixIcon: _query.trim().isEmpty
+                                    ? null
+                                    : IconButton(
+                                        onPressed: () {
+                                          _debouncer.cancel();
+                                          _searchController.clear();
+                                          setState(() => _query = "");
+                                        },
+                                        icon: const Icon(Icons.clear),
+                                      ),
+                                border: const OutlineInputBorder(),
+                                isDense: true,
                               ),
                             ),
-                          )
-                        else
-                          ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: _visibleOrders.length,
-                            itemBuilder: (context, index) {
-                              final order = _visibleOrders[index];
-                              final orderId = _asText(order["orderId"]);
-                              final status = _asText(order["status"]);
-                              return Dismissible(
-                                key: ValueKey("$orderId:$status"),
-                                direction: DismissDirection.endToStart,
-                                background: Container(
-                                  alignment: Alignment.centerRight,
-                                  padding: const EdgeInsets.only(right: 20),
-                                  color: Colors.red,
-                                  child: const Icon(Icons.delete,
-                                      color: Colors.white),
+                            if (_recentSearches.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              SizedBox(
+                                height: 34,
+                                child: ListView.separated(
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: _recentSearches.length,
+                                  separatorBuilder: (_, __) =>
+                                      const SizedBox(width: 8),
+                                  itemBuilder: (context, index) {
+                                    final recent = _recentSearches[index];
+                                    return ActionChip(
+                                      avatar: const Icon(
+                                        Icons.history,
+                                        size: 16,
+                                      ),
+                                      label: Text(recent),
+                                      onPressed: () {
+                                        _debouncer.cancel();
+                                        _searchController.text = recent;
+                                        setState(() => _query = recent);
+                                      },
+                                    );
+                                  },
                                 ),
-                                confirmDismiss: (direction) async {
-                                  await _cancelOrderWithReason(order);
-                                  return false;
+                              ),
+                            ],
+                            const SizedBox(height: 8),
+                            SizedBox(
+                              height: 38,
+                              child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: _statusFilters.length,
+                                separatorBuilder: (_, __) =>
+                                    const SizedBox(width: 8),
+                                itemBuilder: (context, index) {
+                                  final filter = _statusFilters[index];
+                                  return ChoiceChip(
+                                    label: Text(filter.toUpperCase()),
+                                    selected: _statusFilter == filter,
+                                    onSelected: (_) =>
+                                        setState(() => _statusFilter = filter),
+                                  );
                                 },
-                                onDismissed: (direction) {
-                                  setState(() {
-                                    listOrders.removeWhere((o) =>
-                                        _asText(o["orderId"]) == orderId);
-                                  });
-                                },
-                                child: GestureDetector(
-                                  onLongPress: () =>
-                                      _showOrderQuickActions(order),
-                                  child: CarrOnGoingItem(
-                                    onGoingXeroxItem: order,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                      ],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            DropdownButtonFormField<String>(
+                              initialValue: _sortMode,
+                              decoration: const InputDecoration(
+                                labelText: "Sort by",
+                                border: OutlineInputBorder(),
+                                isDense: true,
+                              ),
+                              items: _sortModes
+                                  .map(
+                                    (mode) => DropdownMenuItem(
+                                      value: mode,
+                                      child: Text(mode.replaceAll("_", " ")),
+                                    ),
+                                  )
+                                  .toList(),
+                              onChanged: (value) {
+                                if (value == null) return;
+                                setState(() => _sortMode = value);
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
+                    const SizedBox(height: 10),
+                    if (_visibleOrders.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 70),
+                        child: Center(
+                          child: NoOrders.custom(
+                            title: "No Matching Orders",
+                            subtitle:
+                                "Try changing search text or selected status.",
+                          ),
+                        ),
+                      )
+                    else
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _visibleOrders.length,
+                        itemBuilder: (context, index) {
+                          final order = _visibleOrders[index];
+                          final orderId = _asText(order["orderId"]);
+                          final status = _asText(order["status"]);
+                          return Dismissible(
+                            key: ValueKey("$orderId:$status"),
+                            direction: DismissDirection.endToStart,
+                            background: Container(
+                              alignment: Alignment.centerRight,
+                              padding: const EdgeInsets.only(right: 20),
+                              color: Colors.red,
+                              child: const Icon(
+                                Icons.delete,
+                                color: Colors.white,
+                              ),
+                            ),
+                            confirmDismiss: (direction) async {
+                              await _cancelOrderWithReason(order);
+                              return false;
+                            },
+                            onDismissed: (direction) {
+                              setState(() {
+                                listOrders.removeWhere(
+                                  (o) => _asText(o["orderId"]) == orderId,
+                                );
+                              });
+                            },
+                            child: GestureDetector(
+                              onLongPress: () => _showOrderQuickActions(order),
+                              child: CarrOnGoingItem(onGoingXeroxItem: order),
+                            ),
+                          );
+                        },
+                      ),
+                  ],
+                ),
         ),
       ),
     );
