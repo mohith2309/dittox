@@ -56,6 +56,26 @@ function dayKey(date = new Date()): string {
   return date.toISOString().slice(0, 10);
 }
 
+// Security mitigation: SSRF prevention
+// Validate webhook URLs to ensure they don't target internal/private subnets or metadata endpoints
+function isSafeUrl(urlString: string): boolean {
+  try {
+    const url = new URL(urlString);
+    if (url.protocol !== "https:" && url.protocol !== "http:") return false;
+
+    const host = url.hostname;
+    if (host === "localhost" || host === "127.0.0.1" || host === "[::1]") return false;
+    if (host === "169.254.169.254") return false;
+    if (/^10\.\d+\.\d+\.\d+$/.test(host)) return false;
+    if (/^192\.168\.\d+\.\d+$/.test(host)) return false;
+    if (/^172\.(1[6-9]|2[0-9]|3[0-1])\.\d+\.\d+$/.test(host)) return false;
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function writeAudit(action: string, payload: FirestoreData): Promise<void> {
   const id = safeId(`${action}-${Date.now()}-${Math.random()}`);
   await db.collection(collections.auditLogs).doc(id).set({
@@ -83,6 +103,11 @@ async function markProcessed(
 }
 
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  // Security mitigation: SSRF prevention
+  if (!isSafeUrl(url)) {
+    throw new Error(`Invalid or insecure webhook URL blocked by SSRF protection: ${url}`);
+  }
+
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +115,8 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    // Security mitigation: Open Redirect protection
+    redirect: "error",
   });
 }
 
