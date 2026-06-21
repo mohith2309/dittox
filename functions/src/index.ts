@@ -82,7 +82,38 @@ async function markProcessed(
   );
 }
 
+// SECURITY: Prevent SSRF by validating URLs against local/private addresses
+function isRestrictedUrl(urlString: string): boolean {
+  try {
+    const parsedUrl = new URL(urlString);
+    if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") return true;
+
+    // URL parsing automatically normalizes IP addresses (e.g., 0x7f.0.0.1 -> 127.0.0.1)
+    const hostname = parsedUrl.hostname.toLowerCase();
+
+    // Block local, metadata, and loopback domains
+    if (hostname === "localhost" || hostname === "169.254.169.254" || hostname === "metadata.google.internal") return true;
+
+    // Block IPv4 private/loopback ranges
+    if (/^(?:127|10)\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname)) return true;
+    if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname)) return true;
+    if (/^172\.(?:1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(hostname)) return true;
+
+    // Block IPv6 localhost and private ranges
+    if (hostname === "[::1]" || hostname.startsWith("[fd") || hostname.startsWith("[fc") || hostname.startsWith("[fe80")) return true;
+
+    return false;
+  } catch (error) {
+    return true; // Reject invalid URLs
+  }
+}
+
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  // SECURITY: Validate URL before dispatching request
+  if (isRestrictedUrl(url)) {
+    throw new Error("Invalid webhook URL");
+  }
+
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +121,7 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    redirect: "error", // SECURITY: Prevent following redirects to restricted URLs
   });
 }
 

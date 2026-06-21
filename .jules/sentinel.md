@@ -1,0 +1,4 @@
+## 2024-06-21 - [CRITICAL] Prevent SSRF Vulnerabilities in Webhooks
+**Vulnerability:** The application was making outbound webhook HTTP requests using user-controlled URLs without proper validation, allowing Server-Side Request Forgery (SSRF) against internal resources (like metadata endpoints and local subnets).
+**Learning:** Even when basic URL parsing is valid, node-fetch will follow redirects and resolve internal IP ranges if not explicitly blocked. Built-in `URL` parsing is great for normalizing potentially obfuscated IPs (like octal/hex) before regex validation.
+**Prevention:** Implement an `isRestrictedUrl` utility that parses URLs and strictly regex matches `parsedUrl.hostname` against loopback, private IPv4/IPv6 blocks, and `metadata.google.internal`. Apply `redirect: "error"` in the fetch call to prevent subsequent redirects to internal IPs.
