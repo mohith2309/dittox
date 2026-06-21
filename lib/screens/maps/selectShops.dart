@@ -20,6 +20,7 @@ import '../../utils/favorite_stores_store.dart';
 import '../../utils/store_auth_store.dart';
 import '../../widgets/common/pill_appbar_title.dart';
 import '../checkout/checkout_screen.dart';
+import '../../utils/app_optimizations.dart';
 
 class SelectShops extends StatefulWidget {
   static const routeName = "/selectShops";
@@ -36,6 +37,7 @@ class _SelectShopsState extends State<SelectShops> {
   final CarouselSliderController _carouselController =
       CarouselSliderController();
   final TextEditingController _shopSearchController = TextEditingController();
+  final Debouncer _debouncer = Debouncer(milliseconds: 300);
   bool _isLoading = false;
   String _shopQuery = "";
   String _sortBy = "distance";
@@ -63,6 +65,7 @@ class _SelectShopsState extends State<SelectShops> {
 
   @override
   void dispose() {
+    _debouncer.dispose();
     _shopSearchController.dispose();
     super.dispose();
   }
@@ -335,7 +338,7 @@ class _SelectShopsState extends State<SelectShops> {
                   borderRadius: BorderRadius.circular(12),
                   child: TextField(
                     controller: _shopSearchController,
-                    onChanged: (value) => setState(() => _shopQuery = value),
+                    onChanged: (value) => _debouncer.run(() => setState(() => _shopQuery = value)),
                     onSubmitted: _rememberSearch,
                     decoration: InputDecoration(
                       hintText: "Search shop name, service, or area",
@@ -628,6 +631,7 @@ class _SelectShopsState extends State<SelectShops> {
                     return ActionChip(
                       label: Text(recent),
                       onPressed: () {
+                        _debouncer.cancel();
                         _shopSearchController.text = recent;
                         setState(() => _shopQuery = recent);
                       },
