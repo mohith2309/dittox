@@ -82,7 +82,27 @@ async function markProcessed(
   );
 }
 
+// Security: Prevent Server-Side Request Forgery (SSRF)
+function isSafeUrl(urlString: string): boolean {
+  try {
+    const parsed = new URL(urlString);
+    const host = parsed.hostname;
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
+    if (host === "localhost" || host === "[::1]") return false;
+    if (/^(?:127|10|169\.254|0)\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host)) return false;
+    if (/^172\.(?:1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(host)) return false;
+    if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(host)) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  // Security: Validate target URL before making outbound request to block internal access
+  if (!isSafeUrl(url)) {
+    throw new Error("Invalid or insecure webhook URL.");
+  }
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +110,8 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    // Security: Disallow redirects to prevent bypasses to internal networks
+    redirect: "error",
   });
 }
 
