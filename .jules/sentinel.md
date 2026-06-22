@@ -1,0 +1,4 @@
+## 2024-06-22 - Prevent SSRF in Webhook Outbox
+**Vulnerability:** Server-Side Request Forgery (SSRF) risk found in Cloud Functions via user-provided webhook URLs in the Webhook Outbox collection. Users could provide arbitrary URLs pointing to internal or metadata services.
+**Learning:** By utilizing native Node.js URL object parsing instead of simple string regexes, we leverage built-in normalization to proactively prevent obfuscation bypasses (like hex/octal encoded IPs) before performing strict IPv4 validation.
+**Prevention:** Always validate user-provided URLs in Cloud Functions by parsing the URL, explicitly checking for http/https protocols, blocking private/loopback/link-local IPv4 subnets, blocking localhost, and setting `redirect: "error"` in the fetch options to prevent SSRF via redirect following.
