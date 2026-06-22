@@ -1,11 +1,10 @@
-import "dart:async";
-
 import "package:flutter/material.dart";
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import "package:provider/provider.dart";
 
 import '../../helpers/map_service.dart';
 import '../../providers/search_place.dart';
+import '../../utils/app_optimizations.dart';
 import '../../utils/color_pallets.dart';
 import '../../utils/dynamicSizing.dart';
 import '../../widgets/maps/buildListTile.dart';
@@ -21,13 +20,13 @@ class LocationText extends StatefulWidget {
 class _LocationTextState extends State<LocationText> {
   var placesSearchController = TextEditingController();
   final ValueNotifier<bool> isLoadingTextPage = ValueNotifier<bool>(false);
-  Timer? debounce;
+  final Debouncer _debouncer = Debouncer(milliseconds: 320);
 
   @override
   void dispose() {
     isLoadingTextPage.dispose();
     placesSearchController.dispose();
-    debounce?.cancel();
+    _debouncer.dispose();
     super.dispose();
   }
 
@@ -119,6 +118,8 @@ class _LocationTextState extends State<LocationText> {
                           child: IconButton(
                               color: ColorPallets.swiggyOrange,
                               onPressed: () {
+                                // Cancel any pending debounce to prevent override of cleared state
+                                _debouncer.cancel();
                                 placesSearchController.clear();
                                 placeProvider.setResult([]);
                               },
@@ -136,8 +137,8 @@ class _LocationTextState extends State<LocationText> {
                 ),
                 onChanged: (value) {
                   setState(() {});
-                  debounce?.cancel();
-                  debounce = Timer(const Duration(milliseconds: 320), () async {
+                  // Utilize reusable debouncer utility for search performance optimization
+                  _debouncer.run(() async {
                     final query = value.trim();
                     if (query.length <= 2) {
                       placeProvider.setResult([]);
@@ -162,13 +163,17 @@ class _LocationTextState extends State<LocationText> {
                   : placeProvider.allreturnedResult.isNotEmpty
                       ? Expanded(
                           child: SizedBox(
-                            child: ListView(children: [
-                              ...placeProvider.allreturnedResult.map((e) =>
-                                  BuildListTile(
-                                      item: e,
-                                      ctx: context,
-                                      isLoadingTextPage: isLoadingTextPage))
-                            ]),
+                            // Optimize large lists using EfficientListView
+                            child: EfficientListView(
+                              itemCount: placeProvider.allreturnedResult.length,
+                              itemBuilder: (context, index) {
+                                return BuildListTile(
+                                  item: placeProvider.allreturnedResult[index],
+                                  ctx: context,
+                                  isLoadingTextPage: isLoadingTextPage,
+                                );
+                              },
+                            ),
                           ),
                         )
                       : Expanded(

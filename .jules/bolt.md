@@ -1,0 +1,3 @@
+## 2024-05-24 - [Flutter Debouncer & ListView Optimization]
+**Learning:** Manual Timer implementations for debouncing in Flutter can lead to memory leaks or delayed state overrides (e.g., when a user clears a search field before the debounce timer finishes) if not managed and cancelled perfectly. Additionally, using a standard `ListView` for unbounded or large datasets causes performance jank because it renders all items synchronously, regardless of visibility.
+**Action:** Always prefer the reusable `Debouncer` utility from `lib/utils/app_optimizations.dart` and ensure its timer is explicitly cancelled on synchronous state changes (like clearing a search). For lists, always use lazily-rendered structures like `EfficientListView` to prevent UI blocking.
