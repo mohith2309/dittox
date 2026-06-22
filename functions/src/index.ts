@@ -82,7 +82,57 @@ async function markProcessed(
   );
 }
 
+
+// 🛡️ Sentinel: Validate URL to prevent SSRF
+function isSafeUrl(urlString: string): boolean {
+  try {
+    const parsedUrl = new URL(urlString);
+    const hostname = parsedUrl.hostname.toLowerCase();
+
+    // Block non-HTTP protocols
+    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+      return false;
+    }
+
+    // Block localhost
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]') {
+      return false;
+    }
+
+    // Block IPv4 private/loopback/link-local/metadata addresses
+    const ipv4Regex = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?).){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+    if (ipv4Regex.test(hostname)) {
+      const parts = hostname.split('.').map(Number);
+
+      // 10.0.0.0/8
+      if (parts[0] === 10) return false;
+      // 172.16.0.0/12
+      if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return false;
+      // 192.168.0.0/16
+      if (parts[0] === 192 && parts[1] === 168) return false;
+      // 127.0.0.0/8 loopback
+      if (parts[0] === 127) return false;
+      // 169.254.0.0/16 link-local (often used for cloud metadata)
+      if (parts[0] === 169 && parts[1] === 254) return false;
+    }
+
+    // Block metadata hostnames directly
+    if (hostname === 'metadata.google.internal' || hostname === '169.254.169.254') {
+      return false;
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  // 🛡️ Sentinel: Validate URL to prevent SSRF
+  if (!isSafeUrl(url)) {
+    throw new Error('Unsafe URL provided for webhook');
+  }
+
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +140,8 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    // 🛡️ Sentinel: Prevent SSRF via redirect following
+    redirect: "error"
   });
 }
 
