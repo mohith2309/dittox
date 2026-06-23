@@ -83,6 +83,20 @@ async function markProcessed(
 }
 
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  // Parse URL to use native normalization to prevent SSRF bypass
+  const parsedUrl = new URL(url);
+  const hostname = parsedUrl.hostname;
+
+  // Validate hostname to block localhost, private IPs, and cloud metadata
+  const isLocalhost = hostname === "localhost" || hostname === "[::1]" || /^127(?:\.\d+){3}$/.test(hostname);
+  const isPrivateIPv4 = /^10(?:\.\d+){3}$/.test(hostname) || /^172\.(?:1[6-9]|2[0-9]|3[0-1])(?:\.\d+){2}$/.test(hostname) || /^192\.168(?:\.\d+){2}$/.test(hostname);
+  const isLinkLocal = /^169\.254(?:\.\d+){2}$/.test(hostname);
+  const isAny = /^0(?:\.\d+){3}$/.test(hostname);
+
+  if (isLocalhost || isPrivateIPv4 || isLinkLocal || isAny) {
+    throw new Error("Invalid webhook URL: Private IPs and localhost are not allowed");
+  }
+
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +104,8 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    // Prevent SSRF via HTTP redirects
+    redirect: "error",
   });
 }
 
