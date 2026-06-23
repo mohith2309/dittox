@@ -82,7 +82,41 @@ async function markProcessed(
   );
 }
 
+// 🛡️ Sentinel: Prevent Server-Side Request Forgery (SSRF)
+// Validates URLs against internal metadata endpoints, localhost, and private networks.
+// Uses native URL object to normalize obfuscated IPs (hex, octal) and checks IPv6 brackets.
+function isSafeUrl(urlString: string): boolean {
+  try {
+    const url = new URL(urlString);
+
+    // Only allow HTTP and HTTPS protocols
+    if (url.protocol !== "http:" && url.protocol !== "https:") return false;
+
+    const hostname = url.hostname;
+
+    // Block cloud metadata endpoint and local/private networks
+    if (hostname === "169.254.169.254" || hostname === "metadata.google.internal") return false;
+    if (hostname === "localhost" || hostname === "127.0.0.1") return false;
+
+    // Block IPv6 localhost and general IPv6 representations of local
+    if (hostname === "[::1]" || hostname === "[0:0:0:0:0:0:0:1]") return false;
+
+    // Block private IPv4 space (10.x.x.x, 172.16-31.x.x, 192.168.x.x)
+    const ipv4Pattern = /^(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})$/;
+    if (ipv4Pattern.test(hostname)) return false;
+
+    return true;
+  } catch (e) {
+    return false; // Invalid URL
+  }
+}
+
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  // 🛡️ Sentinel: Enforce URL safety check before fetching
+  if (!isSafeUrl(url)) {
+    throw new Error("Unsafe webhook URL rejected");
+  }
+
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +124,8 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    // 🛡️ Sentinel: Prevent redirect-based SSRF bypasses
+    redirect: "error",
   });
 }
 
