@@ -83,6 +83,36 @@ async function markProcessed(
 }
 
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  // Validate URL to prevent Server-Side Request Forgery (SSRF)
+  try {
+    const parsed = new URL(url);
+    const hostname = parsed.hostname;
+
+    // Reject localhost
+    if (hostname === "localhost" || hostname === "[::1]") {
+      throw new Error("Invalid webhook URL: Localhost is not allowed.");
+    }
+
+    // Reject all IPv6 addresses to prevent mapped local/internal bypasses
+    if (hostname.startsWith("[")) {
+      throw new Error("Invalid webhook URL: IPv6 addresses are not allowed.");
+    }
+
+    // Reject IPv4 loopback, link-local, and private IP ranges
+    if (/^127\.\d+\.\d+\.\d+$/.test(hostname) ||
+        /^169\.254\.\d+\.\d+$/.test(hostname) ||
+        /^(?:10\.\d+\.\d+\.\d+|172\.(?:1[6-9]|2\d|3[0-1])\.\d+\.\d+|192\.168\.\d+\.\d+)$/.test(hostname)) {
+      throw new Error("Invalid webhook URL: Internal IP addresses are not allowed.");
+    }
+
+    // Only allow HTTP and HTTPS protocols
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      throw new Error("Invalid webhook URL: Only HTTP and HTTPS are allowed.");
+    }
+  } catch (error) {
+    throw new Error(`Webhook URL validation failed: ${error}`);
+  }
+
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +120,7 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    redirect: "error", // Prevent SSRF via redirects
   });
 }
 
