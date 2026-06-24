@@ -8,6 +8,7 @@ class CustomIconButton extends StatelessWidget {
   final int iconSize;
   final int size;
   final VoidCallback onPressed;
+  final String? tooltip;
   const CustomIconButton({
     super.key,
     required this.icon,
@@ -16,23 +17,38 @@ class CustomIconButton extends StatelessWidget {
     required this.size,
     required this.iconSize,
     required this.onPressed,
+    this.tooltip,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onPressed,
-      child: Container(
-          decoration: BoxDecoration(
-              color: backGroundColor,
-              borderRadius: BorderRadius.circular(size / 2)),
-          height: size.toDouble(),
-          width: size.toDouble(),
+    // Wrap button in Tooltip to provide semantic label for screen readers
+    Widget button = Ink(
+      decoration: BoxDecoration(
+          color: backGroundColor,
+          borderRadius: BorderRadius.circular(size / 2)),
+      height: size.toDouble(),
+      width: size.toDouble(),
+      // Use Ink inside InkWell instead of Container so the material splash effect is visually visible
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(size / 2),
+        child: Center(
           child: FaIcon(
             icon,
             color: iconColor,
             size: iconSize.toDouble(),
-          )),
+          ),
+        ),
+      ),
     );
+
+    if (tooltip != null) {
+      return Tooltip(
+        message: tooltip!,
+        child: button,
+      );
+    }
+    return button;
   }
 }
