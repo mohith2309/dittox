@@ -14,6 +14,7 @@ import '../../providers/ListOfShops.dart';
 import '../../providers/current_user.dart';
 import '../../providers/seletedShop.dart';
 import '../../utils/color_pallets_extended.dart';
+import '../../utils/app_optimizations.dart';
 import '../../utils/demo_data.dart';
 import '../../utils/firestore_shop_service.dart';
 import '../../utils/favorite_stores_store.dart';
@@ -36,6 +37,7 @@ class _SelectShopsState extends State<SelectShops> {
   final CarouselSliderController _carouselController =
       CarouselSliderController();
   final TextEditingController _shopSearchController = TextEditingController();
+  final Debouncer _debouncer = Debouncer(milliseconds: 300);
   bool _isLoading = false;
   String _shopQuery = "";
   String _sortBy = "distance";
@@ -64,6 +66,7 @@ class _SelectShopsState extends State<SelectShops> {
   @override
   void dispose() {
     _shopSearchController.dispose();
+    _debouncer.dispose();
     super.dispose();
   }
 
@@ -335,7 +338,13 @@ class _SelectShopsState extends State<SelectShops> {
                   borderRadius: BorderRadius.circular(12),
                   child: TextField(
                     controller: _shopSearchController,
-                    onChanged: (value) => setState(() => _shopQuery = value),
+                    onChanged: (value) {
+                      // Optimization: Debounce the search input to prevent unnecessary
+                      // full widget tree and map list rebuilds on every single keystroke.
+                      _debouncer.run(() {
+                        setState(() => _shopQuery = value);
+                      });
+                    },
                     onSubmitted: _rememberSearch,
                     decoration: InputDecoration(
                       hintText: "Search shop name, service, or area",
@@ -629,6 +638,7 @@ class _SelectShopsState extends State<SelectShops> {
                       label: Text(recent),
                       onPressed: () {
                         _shopSearchController.text = recent;
+                        _debouncer.cancel();
                         setState(() => _shopQuery = recent);
                       },
                     );
