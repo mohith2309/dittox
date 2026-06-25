@@ -91,12 +91,15 @@ class _ShopDashboardScreenState extends State<ShopDashboardScreen>
               ),
             ),
             actions: [
+              // UX: Adding tooltip to icon-only buttons for accessibility and screen reader support
               IconButton(
                 icon: const Icon(Icons.notifications),
+                tooltip: 'Notifications',
                 onPressed: () {},
               ),
               IconButton(
                 icon: const Icon(Icons.settings),
+                tooltip: 'Settings',
                 onPressed: () {},
               ),
             ],
