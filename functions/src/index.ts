@@ -83,8 +83,20 @@ async function markProcessed(
 }
 
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  // Prevent SSRF by parsing the URL and blocking private/internal IPs and localhost.
+  // We use URL.hostname to handle obfuscation like hex/octal encoded IPs.
+  const parsedUrl = new URL(url);
+  const hostname = parsedUrl.hostname;
+
+  const isPrivateIp = /^(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|127\.\d{1,3}\.\d{1,3}\.\d{1,3}|169\.254\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3})$/.test(hostname);
+  if (isPrivateIp || hostname === 'localhost' || hostname === '[::1]') {
+    throw new Error(`SSRF Prevention: Request to ${hostname} is blocked.`);
+  }
+
   return fetch(url, {
     method: "POST",
+    // Mitigate SSRF bypasses via HTTP redirects to internal services
+    redirect: "error",
     headers: {
       "content-type": "application/json",
       "user-agent": "dittox-firebase-functions",
