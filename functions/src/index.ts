@@ -83,6 +83,35 @@ async function markProcessed(
 }
 
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  // Security mitigation for SSRF (Server-Side Request Forgery)
+  // We validate the URL to ensure it is not targeting internal networks, localhost, or cloud metadata endpoints.
+  try {
+    const parsedUrl = new URL(url);
+
+    if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+      throw new Error("Invalid protocol. Only HTTP and HTTPS are allowed.");
+    }
+
+    const hostname = parsedUrl.hostname;
+
+    // Block localhost, cloud metadata, and IPv6 loopback
+    if (hostname === "localhost" || hostname === "169.254.169.254" || hostname === "[::1]" || hostname === "[0:0:0:0:0:0:0:1]") {
+      throw new Error("Invalid target hostname.");
+    }
+
+    // Block private IPv4 ranges
+    const privateIpv4Regex = /^(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}|127\.\d{1,3}\.\d{1,3}\.\d{1,3})$/;
+    if (privateIpv4Regex.test(hostname)) {
+      throw new Error("Invalid target hostname (private IP).");
+    }
+  } catch (error) {
+    // Fail securely without exposing specific reason in the returned promise if it's our validation
+    return new Response(JSON.stringify({ error: "Invalid webhook URL." }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +119,8 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    // Prevent redirect-based SSRF bypasses
+    redirect: "error",
   });
 }
 
