@@ -82,6 +82,57 @@ async function markProcessed(
   );
 }
 
+// Security: Prevent SSRF (Server-Side Request Forgery) by validating user-provided webhook URLs.
+// We use native URL parsing to prevent obfuscation, explicitly block localhost/private IPs/cloud metadata,
+// and enforce strict structural IPv4 matching.
+function isSafeUrl(urlString: string): boolean {
+  try {
+    const parsed = new URL(urlString);
+
+    // Only allow HTTP/HTTPS
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return false;
+    }
+
+    const host = parsed.hostname;
+
+    // Block common internal/metadata hostnames
+    if (
+      host === "localhost" ||
+      host === "127.0.0.1" ||
+      host === "metadata.google.internal" ||
+      host === "169.254.169.254"
+    ) {
+      return false;
+    }
+
+    // Check if it's an IP address
+    const ipv4Regex = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/;
+
+    // Explicitly check IPv4 pattern to avoid falsely flagging valid domains like '10.example.com'
+    if (ipv4Regex.test(host)) {
+      const parts = host.split(".").map((p) => parseInt(p, 10));
+      // 10.x.x.x
+      if (parts[0] === 10) return false;
+      // 172.16.x.x - 172.31.x.x
+      if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return false;
+      // 192.168.x.x
+      if (parts[0] === 192 && parts[1] === 168) return false;
+      // 127.x.x.x
+      if (parts[0] === 127) return false;
+    }
+
+    // Block IPv6 localhost and other potential internal IPv6 (simple check)
+    if (host.includes("[::1]") || host.startsWith("[fc") || host.startsWith("[fd") || host.startsWith("[fe8")) {
+      return false;
+    }
+
+    return true;
+  } catch (e) {
+    return false; // Invalid URL structure
+  }
+}
+
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
   return fetch(url, {
     method: "POST",
@@ -90,6 +141,8 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    // Security: Prevent SSRF bypasses via redirects pointing to internal network
+    redirect: "error",
   });
 }
 
@@ -189,6 +242,12 @@ export const processWebhookOutbox = onDocumentCreated(
     const url = stringValue(data.targetUrl || data.webhookUrl || process.env.DITTOX_DEFAULT_WEBHOOK_URL);
     if (!url) {
       await markProcessed(snap.ref, "missing_target_url");
+      return;
+    }
+
+    if (!isSafeUrl(url)) {
+      logger.warn(`Blocked potentially unsafe webhook URL: ${url}`);
+      await markProcessed(snap.ref, "invalid_url");
       return;
     }
 
