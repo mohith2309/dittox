@@ -66,6 +66,31 @@ async function markProcessed(ref, status, extra = {}) {
         updatedAt: firestore_1.FieldValue.serverTimestamp(),
     }, { merge: true });
 }
+// Security Note: Validating URLs using native URL parsing helps protect against Server-Side Request Forgery (SSRF) bypasses (e.g., hex/octal encoded IPs).
+function validateWebhookUrl(urlStr) {
+    try {
+        const url = new URL(urlStr);
+        if (url.protocol !== "https:" && url.protocol !== "http:")
+            return false;
+        const hostname = url.hostname;
+        // Block localhost and IPv6 loopback
+        if (hostname === "localhost" || hostname === "127.0.0.1" || hostname === "[::1]")
+            return false;
+        // Block private IPs (IPv4)
+        // Use regex to strictly match IP patterns, ensuring we don't false-positive on valid domains like 10.example.com
+        const isIPv4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.test(hostname);
+        if (isIPv4) {
+            if (/^(?:10|127|169\.254|192\.168)\./.test(hostname))
+                return false;
+            if (/^172\.(?:1[6-9]|2[0-9]|3[0-1])\./.test(hostname))
+                return false;
+        }
+        return true;
+    }
+    catch {
+        return false;
+    }
+}
 async function sendWebhook(url, payload) {
     return fetch(url, {
         method: "POST",
@@ -74,6 +99,8 @@ async function sendWebhook(url, payload) {
             "user-agent": "dittox-firebase-functions",
         },
         body: JSON.stringify(payload),
+        // Security Note: Prevent open redirects from bypassing initial validation
+        redirect: "error",
     });
 }
 exports.processNotificationIntent = (0, firestore_2.onDocumentCreated)(`${collections.notificationIntents}/{intentId}`, async (event) => {
@@ -131,6 +158,11 @@ exports.processNotificationIntent = (0, firestore_2.onDocumentCreated)(`${collec
             });
             return;
         }
+        // Security Note: Validate targetUrl before dispatching the webhook to prevent SSRF
+        if (!validateWebhookUrl(targetUrl)) {
+            await markProcessed(snap.ref, "failed", { reason: "invalid_target_url" });
+            return;
+        }
         const response = await sendWebhook(targetUrl, {
             channel,
             userId,
@@ -155,6 +187,11 @@ exports.processWebhookOutbox = (0, firestore_2.onDocumentCreated)(`${collections
     const url = stringValue(data.targetUrl || data.webhookUrl || process.env.DITTOX_DEFAULT_WEBHOOK_URL);
     if (!url) {
         await markProcessed(snap.ref, "missing_target_url");
+        return;
+    }
+    // Security Note: Validate url before dispatching the webhook to prevent SSRF
+    if (!validateWebhookUrl(url)) {
+        await markProcessed(snap.ref, "failed", { reason: "invalid_target_url" });
         return;
     }
     try {
