@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../utils/app_optimizations.dart';
 import '../../utils/color_pallets.dart';
 import '../../utils/favorite_stores_store.dart';
 import '../../widgets/common/pill_appbar_title.dart';
@@ -69,7 +70,8 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                       ),
                     ],
                   )
-                : ListView.builder(
+                : EfficientListView(
+                    // Performance: Uses EfficientListView for optimized list rendering
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.all(12),
                     itemCount: _favorites.length,
