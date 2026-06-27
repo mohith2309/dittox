@@ -82,7 +82,51 @@ async function markProcessed(
   );
 }
 
+function isSafeUrl(urlString: string): boolean {
+  try {
+    const parsed = new URL(urlString);
+
+    // 🛡️ Sentinel: SSRF Mitigation - Only allow HTTP and HTTPS
+    if (!["http:", "https:"].includes(parsed.protocol)) {
+      return false;
+    }
+
+    const host = parsed.hostname.toLowerCase();
+
+    // 🛡️ Sentinel: SSRF Mitigation - Block local, loopback, and metadata endpoints
+    if (
+      host === "localhost" ||
+      host === "[::1]" ||
+      host === "169.254.169.254" ||
+      host === "metadata.google.internal"
+    ) {
+      return false;
+    }
+
+    // 🛡️ Sentinel: SSRF Mitigation - Block private IPv4 networks
+    // strict matching to prevent falsely flagging valid domains like 10.example.com
+    const isPrivateIp =
+      /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host) ||
+      /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host) ||
+      /^192\.168\.\d{1,3}\.\d{1,3}$/.test(host) ||
+      /^172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(host);
+
+    if (isPrivateIp) {
+      return false;
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  // 🛡️ Sentinel: SSRF Mitigation - Validate URL before sending webhook
+  if (!isSafeUrl(url)) {
+    throw new Error(`Invalid or unsafe webhook URL: ${url}`);
+  }
+
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +134,8 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    // 🛡️ Sentinel: SSRF Mitigation - Prevent following malicious redirects
+    redirect: "error",
   });
 }
 
