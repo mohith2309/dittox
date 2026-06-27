@@ -1,0 +1,4 @@
+## 2024-10-24 - SSRF Protection using Node's URL
+**Vulnerability:** The webhook sender (`sendWebhook`) in Cloud Functions allowed making arbitrary POST requests to any URL without validation, opening up an SSRF (Server-Side Request Forgery) vulnerability that could hit internal/private networks or cloud metadata servers.
+**Learning:** Native `fetch` doesn't protect against SSRF. Simple string matching for SSRF protection is often bypassed via obfuscated IPs (like hex/octal or IPv6 representation).
+**Prevention:** Always use Node.js's native `URL` parser (`new URL()`) to leverage built-in normalization before doing validation checks against the hostname to securely block `localhost`, loopbacks, private IPv4 ranges, and cloud metadata IPs. Additionally, configure `redirect: "error"` to prevent the target from redirecting to an internal endpoint.

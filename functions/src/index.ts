@@ -82,7 +82,28 @@ async function markProcessed(
   );
 }
 
+function isSafeUrl(urlString: string): boolean {
+  try {
+    const url = new URL(urlString);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return false;
+    const host = url.hostname;
+    if (host === "localhost" || host === "[::1]" || host === "169.254.169.254") return false;
+    const privateIpv4Regex = /^(?:127\.\d{1,3}\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})$/;
+    if (privateIpv4Regex.test(host)) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  // Security mitigation for Server-Side Request Forgery (SSRF).
+  // Prevent calling private IPs, localhost, or cloud metadata endpoints.
+  if (!isSafeUrl(url)) {
+    logger.error("Blocked SSRF attempt to unsafe URL", { url });
+    throw new Error("Unsafe URL blocked");
+  }
+
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +111,7 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    redirect: "error", // Prevent SSRF via redirects
   });
 }
 
