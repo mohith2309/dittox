@@ -82,6 +82,10 @@ class AuthTextFormField extends StatelessWidget {
                   ),
                 ),
                 child: IconButton(
+                  // Added tooltip for accessibility and better UX when interacting with the icon button
+                  tooltip: isPassword
+                      ? (isObscure ? 'Show password' : 'Hide password')
+                      : 'Clear text',
                   color: ColorPallets.deepBlue,
                   onPressed: isPassword
                       ? onVisibilityToggle
