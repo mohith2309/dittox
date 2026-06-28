@@ -1,0 +1,4 @@
+## 2025-02-19 - SSRF Vulnerability in Webhook Sender
+**Vulnerability:** The Cloud Functions fetch data from user-provided URLs in `processWebhookOutbox` without validating the host. This exposes the system to Server-Side Request Forgery (SSRF), allowing users to request internal IP addresses like `localhost`, AWS/GCP metadata servers (e.g., `169.254.169.254`), and private subnets (`10.x.x.x`, `192.168.x.x`).
+**Learning:** Native `URL.hostname` parsing is necessary for validation because it normalizes obfuscated URLs, but when dealing with SSRF validation, IPv6 IP addresses returned by `URL.hostname` will often still have enclosing brackets (e.g., `[::1]`). Regex validation needs to be strict to only match full private IPs and not incorrectly flag domains like `10.example.com`.
+**Prevention:** Always validate all outbound URLs built with user input to reject loopback, private IPs, and metadata server IPs using native Node.js `URL` object parsing.

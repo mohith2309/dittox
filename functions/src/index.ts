@@ -82,14 +82,32 @@ async function markProcessed(
   );
 }
 
-async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
-  return fetch(url, {
+async function sendWebhook(urlString: string, payload: FirestoreData): Promise<Response> {
+  // SECURITY: Validate URL and block local/private/cloud metadata IP ranges to prevent SSRF
+  let url: URL;
+  try {
+    url = new URL(urlString);
+  } catch (error) {
+    throw new Error("Invalid webhook URL");
+  }
+
+  const hostname = url.hostname;
+  const isLocalhost = hostname === "localhost" || hostname.endsWith(".localhost");
+  const isIpv4Private = /^(?:127\.\d{1,3}\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|169\.254\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3})$/.test(hostname);
+  const isIpv6Private = /^\[?(?:(?:0{0,4}:){7}0{0,3}1|::1|fc[0-9a-f]{2}:|fd[0-9a-f]{2}:|fe8[0-9a-f]:)/i.test(hostname);
+
+  if (isLocalhost || isIpv4Private || isIpv6Private) {
+    throw new Error("Blocked: Internal/Private IPs are not permitted for webhooks (SSRF protection)");
+  }
+
+  return fetch(url.toString(), {
     method: "POST",
     headers: {
       "content-type": "application/json",
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    redirect: "error", // SECURITY: Do not follow redirects to bypass SSRF checks
   });
 }
 
