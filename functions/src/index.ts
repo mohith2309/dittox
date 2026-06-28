@@ -82,9 +82,40 @@ async function markProcessed(
   );
 }
 
+// 🛡️ Sentinel: SSRF Prevention
+// Validates URLs to block localhost, private IPs, and cloud metadata endpoints
+// Uses native URL object parsing to prevent obfuscation bypasses
+function isSafeWebhookUrl(urlString: string): boolean {
+  try {
+    const parsed = new URL(urlString);
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return false;
+    const h = parsed.hostname;
+
+    // Block loopback addresses
+    if (h === "localhost" || h === "127.0.0.1" || h === "[::1]") return false;
+
+    // Block IPv4 private ranges and cloud metadata
+    if (/^(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}|169\.254\.169\.254)$/.test(h)) return false;
+
+    // Block IPv6 private and link-local ranges
+    if (h.startsWith("[fd") || h.startsWith("[fc") || h.startsWith("[fe80")) return false;
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  // 🛡️ Sentinel: Enforce SSRF protection before making external requests
+  if (!isSafeWebhookUrl(url)) {
+    throw new Error(`Unsafe webhook URL rejected: ${url}`);
+  }
+
   return fetch(url, {
     method: "POST",
+    // 🛡️ Sentinel: Prevent SSRF via redirects
+    redirect: "error",
     headers: {
       "content-type": "application/json",
       "user-agent": "dittox-firebase-functions",
