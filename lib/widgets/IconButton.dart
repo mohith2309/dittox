@@ -8,6 +8,8 @@ class CustomIconButton extends StatelessWidget {
   final int iconSize;
   final int size;
   final VoidCallback onPressed;
+  final String? tooltip;
+
   const CustomIconButton({
     super.key,
     required this.icon,
@@ -16,23 +18,38 @@ class CustomIconButton extends StatelessWidget {
     required this.size,
     required this.iconSize,
     required this.onPressed,
+    this.tooltip,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onPressed,
-      child: Container(
-          decoration: BoxDecoration(
-              color: backGroundColor,
-              borderRadius: BorderRadius.circular(size / 2)),
-          height: size.toDouble(),
-          width: size.toDouble(),
+    // 🎨 Palette: Replaced Container with Ink/InkWell for ripple effect and added Tooltip for accessibility
+    Widget button = Ink(
+      decoration: BoxDecoration(
+          color: backGroundColor,
+          borderRadius: BorderRadius.circular(size / 2)),
+      height: size.toDouble(),
+      width: size.toDouble(),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(size / 2),
+        child: Center(
           child: FaIcon(
             icon,
             color: iconColor,
             size: iconSize.toDouble(),
-          )),
+          ),
+        ),
+      ),
     );
+
+    if (tooltip != null) {
+      return Tooltip(
+        message: tooltip!,
+        child: button,
+      );
+    }
+
+    return button;
   }
 }
