@@ -1,0 +1,3 @@
+## 2025-01-20 - Use Ink instead of Container for custom buttons with backgrounds
+**Learning:** Using `Container` with a color decoration inside an `InkWell` obscures the Material ripple/splash effect, leading to a poorer UX due to missing visual feedback on tap.
+**Action:** Use an `Ink` widget instead of `Container` for the colored background so the ripple effect remains visible when an `InkWell` is tapped.
