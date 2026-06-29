@@ -82,14 +82,40 @@ async function markProcessed(
   );
 }
 
-async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
-  return fetch(url, {
+async function sendWebhook(urlStr: string, payload: FirestoreData): Promise<Response> {
+  // SECURITY: Prevent SSRF by validating the webhook URL before making the request.
+  const url = new URL(urlStr);
+
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    throw new Error("Invalid webhook protocol. Only HTTP and HTTPS are allowed.");
+  }
+
+  const hostname = url.hostname;
+
+  // SECURITY: Block metadata endpoints, localhost, and IPv6 loopback
+  if (hostname === "169.254.169.254" || hostname === "localhost" || hostname === "[::1]") {
+    throw new Error("Webhook URL points to restricted host.");
+  }
+
+  // SECURITY: Block private IP ranges (IPv4)
+  if (
+    /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) || // 127.0.0.0/8
+    /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) || // 10.0.0.0/8
+    /^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname) || // 192.168.0.0/16
+    /^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(hostname) // 172.16.0.0/12
+  ) {
+    throw new Error("Webhook URL points to restricted IP range.");
+  }
+
+  return fetch(url.toString(), {
     method: "POST",
     headers: {
       "content-type": "application/json",
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    // SECURITY: Prevent redirect-based SSRF bypasses
+    redirect: "error",
   });
 }
 
