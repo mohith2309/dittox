@@ -82,7 +82,36 @@ async function markProcessed(
   );
 }
 
+function isSafeWebhookUrl(urlString: string): boolean {
+  try {
+    const url = new URL(urlString);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return false;
+
+    const hostname = url.hostname;
+    // SSRF mitigation: Block localhost, cloud metadata, and private IP ranges
+    if (
+      hostname === "localhost" ||
+      hostname === "[::1]" ||
+      /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+      /^169\.254\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+      /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+      /^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+      /^172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(hostname)
+    ) {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  // Prevent SSRF by validating the user-provided webhook URL
+  if (!isSafeWebhookUrl(url)) {
+    throw new Error(`Unsafe webhook URL blocked: ${url}`);
+  }
+
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +119,7 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    redirect: "error", // Prevent SSRF via redirects
   });
 }
 
