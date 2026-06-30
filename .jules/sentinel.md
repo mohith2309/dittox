@@ -1,0 +1,4 @@
+## 2024-05-24 - SSRF in Webhook Outbox
+**Vulnerability:** The Cloud Function `processWebhookOutbox` accepts arbitrary webhook URLs and sends requests using `fetch` without any server-side request forgery (SSRF) validation. This allows a malicious user to send outbound requests to internal Firebase/GCP endpoints, localhost, or private IPs by specifying them in the `targetUrl` or `webhookUrl` fields.
+**Learning:** Cloud functions making HTTP requests from user-provided URLs must explicitly block access to internal/private IP ranges and metadata servers. Node.js `URL.hostname` validation is necessary to catch obfuscated bypasses like `[::1]`.
+**Prevention:** Implement strict URL validation for all outbound HTTP requests made by cloud functions, blocking `localhost`, private IP ranges (10.x.x.x, 172.16.x.x, 192.168.x.x), and cloud metadata IPs (169.254.x.x). Also enforce `redirect: 'error'` in `fetch` to prevent redirection bypasses.
