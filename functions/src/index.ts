@@ -83,6 +83,33 @@ async function markProcessed(
 }
 
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  // Security mitigation: Prevent SSRF by validating the webhook URL before fetching.
+  // We use Node.js URL parsing to natively normalize the host and block internal IPs.
+  const parsedUrl = new URL(url);
+
+  if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+    throw new Error("Invalid protocol. Only HTTP and HTTPS are supported.");
+  }
+
+  const hostname = parsedUrl.hostname;
+
+  // Regexes to match localhost, IPv6 loopback, and private IPv4 ranges
+  const localhostRegex = /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$|^0\.0\.0\.0$|^\[::1\]$|^localhost$/i;
+  const privateIp10Regex = /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/;
+  const privateIp172Regex = /^172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}$/;
+  const privateIp192Regex = /^192\.168\.\d{1,3}\.\d{1,3}$/;
+  const metadataIpRegex = /^169\.254\.\d{1,3}\.\d{1,3}$/;
+
+  if (
+    localhostRegex.test(hostname) ||
+    privateIp10Regex.test(hostname) ||
+    privateIp172Regex.test(hostname) ||
+    privateIp192Regex.test(hostname) ||
+    metadataIpRegex.test(hostname)
+  ) {
+    throw new Error("Invalid target URL: internal or private IPs are blocked to prevent SSRF.");
+  }
+
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +117,8 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    // Security mitigation: block automatic redirects to prevent bypasses
+    redirect: "error",
   });
 }
 
