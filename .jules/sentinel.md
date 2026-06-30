@@ -1,0 +1,4 @@
+## 2024-06-30 - Fix SSRF Vulnerability in Webhook Sender
+**Vulnerability:** The `sendWebhook` function was blindly making outbound `fetch` requests based on URLs provided in Firestore documents, allowing an attacker to query internal loopback addresses (127.0.0.1), private networks, and cloud metadata (169.254.169.254).
+**Learning:** We need to explicitly validate webhook target URLs. Open redirects are also an SSRF bypass if the initial request follows redirects into the internal network. We must also use the native `URL` parsing to prevent bypasses with obfuscated hex/octal IPs.
+**Prevention:** Implement an `isSafeUrl` check utilizing regex blocking for local and internal ranges on parsed `URL.hostname` attributes. Add `redirect: "error"` to fetch options whenever issuing outbound calls based on user-provided input.

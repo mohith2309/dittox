@@ -82,9 +82,40 @@ async function markProcessed(
   );
 }
 
+// 🛡️ Sentinel: SSRF prevention. Validate URLs to prevent querying private/local networks
+function isSafeUrl(urlString: string): boolean {
+  try {
+    // 🛡️ Use native URL parser to normalize obfuscated IPs (e.g. 0x7f000001 -> 127.0.0.1)
+    const urlObj = new URL(urlString);
+    if (urlObj.protocol !== "http:" && urlObj.protocol !== "https:") return false;
+
+    const h = urlObj.hostname;
+    if (h === "localhost" || h === "[::1]") return false;
+
+    // 🛡️ Block loopback, cloud metadata (169.254), and private IPv4 networks (10, 172.16-31, 192.168)
+    if (/^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(h)) return false;
+    if (/^169\.254\.\d{1,3}\.\d{1,3}$/.test(h)) return false;
+    if (/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(h)) return false;
+    if (/^172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(h)) return false;
+    if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(h)) return false;
+
+    // 🛡️ Block private IPv6 unique local addresses (fc00::/7) and link-local (fe80::/10)
+    if (/^\[(fc|fd|fe[89ab])[a-f0-9:]+\]$/i.test(h)) return false;
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  if (!isSafeUrl(url)) {
+    throw new Error("Invalid or blocked webhook target URL.");
+  }
   return fetch(url, {
     method: "POST",
+    // 🛡️ Sentinel: Prevent SSRF via open redirects to metadata/local IPs
+    redirect: "error",
     headers: {
       "content-type": "application/json",
       "user-agent": "dittox-firebase-functions",
