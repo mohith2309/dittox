@@ -1,0 +1,3 @@
+## 2024-07-01 - Prevent Main Thread Blocking in TextField
+**Learning:** In Flutter, updating state synchronously in `TextField`'s `onChanged` handler can block the main thread and cause UI jank when the updated state triggers an expensive re-render (like filtering a large list of shops or orders).
+**Action:** Always wrap these `setState` calls with a `Debouncer` to delay the execution until the user finishes typing. Ensure any explicit UI actions (like 'clear' buttons or selecting recent searches) cancel the debouncer (`_debouncer.cancel()`) before executing their synchronous state updates to prevent delayed overrides.
