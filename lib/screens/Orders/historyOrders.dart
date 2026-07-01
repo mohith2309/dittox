@@ -655,9 +655,17 @@ class _HistoryOrdersState extends State<HistoryOrders> {
             },
             icon: const Icon(Icons.notifications_active_rounded),
           ),
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _fetchOrders),
+          // Tooltip provides semantic labels for screen readers
           IconButton(
-              icon: const Icon(Icons.delete_outline), onPressed: _clearHistory),
+            tooltip: 'Refresh Orders',
+            icon: const Icon(Icons.refresh),
+            onPressed: _fetchOrders,
+          ),
+          // Tooltip provides semantic labels for screen readers
+          IconButton(
+              tooltip: 'Clear History',
+              icon: const Icon(Icons.delete_outline),
+              onPressed: _clearHistory),
         ],
       ),
       body: RefreshIndicator(
@@ -742,7 +750,9 @@ class _HistoryOrdersState extends State<HistoryOrders> {
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _query.trim().isEmpty
                     ? null
+                    // Tooltip provides semantic labels for screen readers
                     : IconButton(
+                        tooltip: 'Clear Search',
                         onPressed: () {
                           _searchController.clear();
                           setState(() => _query = "");
