@@ -66,6 +66,36 @@ async function writeAudit(action: string, payload: FirestoreData): Promise<void>
   });
 }
 
+function isUrlSafeForWebhook(urlString: string): boolean {
+  try {
+    const parsedUrl = new URL(urlString);
+    if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+      return false;
+    }
+
+    const hostname = parsedUrl.hostname.toLowerCase();
+
+    // Block localhost, private IPs, and cloud metadata (SSRF Mitigation)
+    if (
+      hostname === "localhost" ||
+      /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+      hostname === "169.254.169.254" ||
+      /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+      /^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+      /^172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+      hostname === "[::1]" ||
+      hostname.includes("internal") ||
+      hostname.includes("corp")
+    ) {
+      return false;
+    }
+
+    return true;
+  } catch (e) {
+    return false; // Invalid URL format
+  }
+}
+
 async function markProcessed(
   ref: FirebaseFirestore.DocumentReference,
   status: string,
@@ -83,6 +113,12 @@ async function markProcessed(
 }
 
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  // SECURITY: Validate URL before fetching to prevent SSRF against internal/metadata endpoints
+  if (!isUrlSafeForWebhook(url)) {
+    logger.warn(`SSRF attempt blocked for URL: ${url}`);
+    return new Response("Blocked: Invalid or unsafe URL", { status: 400 });
+  }
+
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +126,8 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    // SECURITY: Prevent SSRF via 3xx redirects
+    redirect: "error",
   });
 }
 
