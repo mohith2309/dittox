@@ -15,6 +15,7 @@ import '../../utils/favorite_stores_store.dart';
 import '../../utils/firestore_orders_sync.dart';
 import '../../utils/orders_cache_store.dart';
 import '../../utils/security_utils.dart';
+import '../../utils/app_optimizations.dart';
 import '../../utils/search_history_store.dart';
 import '../additional/feedback_screen.dart';
 import 'order_tracking_screen.dart';
@@ -39,6 +40,7 @@ class _HistoryOrdersState extends State<HistoryOrders> {
   String _query = "";
   String _sortMode = "newest";
   final TextEditingController _searchController = TextEditingController();
+  final Debouncer _debouncer = Debouncer(milliseconds: 300);
   List<String> _recentSearches = const <String>[];
   List<String> _archivedOrderIds = const <String>[];
   Map<String, dynamic> _collectedPhotos = const <String, dynamic>{};
@@ -113,6 +115,7 @@ class _HistoryOrdersState extends State<HistoryOrders> {
 
   @override
   void dispose() {
+    _debouncer.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -735,7 +738,10 @@ class _HistoryOrdersState extends State<HistoryOrders> {
             TextField(
               controller: _searchController,
               textInputAction: TextInputAction.search,
-              onChanged: (value) => setState(() => _query = value),
+              onChanged: (value) {
+                // Performance Optimization: Debounce search to prevent main thread blocking during list filtering
+                _debouncer.run(() => setState(() => _query = value));
+              },
               onSubmitted: _rememberSearch,
               decoration: InputDecoration(
                 hintText: "Search history by order id, shop, or status",
@@ -744,6 +750,7 @@ class _HistoryOrdersState extends State<HistoryOrders> {
                     ? null
                     : IconButton(
                         onPressed: () {
+                          _debouncer.cancel();
                           _searchController.clear();
                           setState(() => _query = "");
                         },
@@ -767,6 +774,7 @@ class _HistoryOrdersState extends State<HistoryOrders> {
                       avatar: const Icon(Icons.history, size: 16),
                       label: Text(recent),
                       onPressed: () {
+                        _debouncer.cancel();
                         _searchController.text = recent;
                         setState(() => _query = recent);
                       },

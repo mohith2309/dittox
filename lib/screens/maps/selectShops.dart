@@ -16,6 +16,7 @@ import '../../providers/seletedShop.dart';
 import '../../utils/color_pallets_extended.dart';
 import '../../utils/demo_data.dart';
 import '../../utils/firestore_shop_service.dart';
+import '../../utils/app_optimizations.dart';
 import '../../utils/favorite_stores_store.dart';
 import '../../utils/store_auth_store.dart';
 import '../../widgets/common/pill_appbar_title.dart';
@@ -36,6 +37,7 @@ class _SelectShopsState extends State<SelectShops> {
   final CarouselSliderController _carouselController =
       CarouselSliderController();
   final TextEditingController _shopSearchController = TextEditingController();
+  final Debouncer _debouncer = Debouncer(milliseconds: 300);
   bool _isLoading = false;
   String _shopQuery = "";
   String _sortBy = "distance";
@@ -63,6 +65,7 @@ class _SelectShopsState extends State<SelectShops> {
 
   @override
   void dispose() {
+    _debouncer.dispose();
     _shopSearchController.dispose();
     super.dispose();
   }
@@ -335,7 +338,10 @@ class _SelectShopsState extends State<SelectShops> {
                   borderRadius: BorderRadius.circular(12),
                   child: TextField(
                     controller: _shopSearchController,
-                    onChanged: (value) => setState(() => _shopQuery = value),
+                    onChanged: (value) {
+                      // Performance Optimization: Debounce search to prevent main thread blocking during list filtering
+                      _debouncer.run(() => setState(() => _shopQuery = value));
+                    },
                     onSubmitted: _rememberSearch,
                     decoration: InputDecoration(
                       hintText: "Search shop name, service, or area",
@@ -628,6 +634,7 @@ class _SelectShopsState extends State<SelectShops> {
                     return ActionChip(
                       label: Text(recent),
                       onPressed: () {
+                        _debouncer.cancel();
                         _shopSearchController.text = recent;
                         setState(() => _shopQuery = recent);
                       },
