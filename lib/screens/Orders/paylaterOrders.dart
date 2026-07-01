@@ -351,7 +351,9 @@ class _PayLaterState extends State<PayLater> {
                                     prefixIcon: const Icon(Icons.search),
                                     suffixIcon: _query.trim().isEmpty
                                         ? null
+                                        // Tooltip provides semantic labels for screen readers
                                         : IconButton(
+                                            tooltip: 'Clear Search',
                                             onPressed: () =>
                                                 setState(() => _query = ""),
                                             icon: const Icon(Icons.clear),
