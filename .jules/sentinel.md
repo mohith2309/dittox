@@ -1,0 +1,4 @@
+## 2024-05-30 - SSRF Vulnerability in Webhook Outbox
+**Vulnerability:** The `processWebhookOutbox` and `processNotificationIntent` functions make outbound HTTP requests using user-provided URLs from Firestore without validation, enabling Server-Side Request Forgery (SSRF) and allowing access to internal cloud metadata (e.g., 169.254.169.254) or private networks.
+**Learning:** Webhook systems that allow users to specify target URLs inherently introduce SSRF risks if the URLs are not strictly validated and normalized using the native Node.js `URL` object before the fetch call.
+**Prevention:** Always parse outbound user-provided URLs using the `URL` object to normalize them, validate the hostname against strict regexes blocking private/loopback/metadata IP ranges, restrict to `http:`/`https:`, and enforce `redirect: 'error'` in `fetch` configurations.
