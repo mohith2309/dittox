@@ -82,9 +82,39 @@ async function markProcessed(
   );
 }
 
+function isUrlSafe(urlString: string): boolean {
+  try {
+    const parsed = new URL(urlString);
+    const host = parsed.hostname.toLowerCase();
+
+    // Block localhost and IPv6 loopback
+    if (host === "localhost" || host === "[::1]") return false;
+
+    // Block cloud metadata endpoints
+    if (host === "169.254.169.254") return false;
+
+    // Block private IPv4 ranges
+    if (/^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host)) return false;
+    if (/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host)) return false;
+    if (/^172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(host)) return false;
+    if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(host)) return false;
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  // 🛡️ SSRF Mitigation: Validate the URL before fetching to prevent internal network scanning
+  if (!isUrlSafe(url)) {
+    throw new Error(`Unsafe webhook URL blocked: ${url}`);
+  }
+
   return fetch(url, {
     method: "POST",
+    // 🛡️ SSRF Mitigation: Disable automatic redirects to prevent bypasses
+    redirect: "error",
     headers: {
       "content-type": "application/json",
       "user-agent": "dittox-firebase-functions",

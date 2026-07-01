@@ -1,0 +1,4 @@
+## 2024-07-01 - Fix SSRF Vulnerability in Webhook Deliveries
+**Vulnerability:** The `sendWebhook` function in Cloud Functions accepted arbitrary URLs from user-provided data and fetched them without any validation or sanitization, potentially exposing internal services and cloud metadata endpoints. It also did not enforce `redirect: 'error'`, allowing attackers to bypass validation using harmless redirects.
+**Learning:** Outbound webhook functionalities are prime targets for Server-Side Request Forgery (SSRF) and must treat user-provided URLs as completely untrusted input, even if the URL appears to be an internal or operational field.
+**Prevention:** Always validate and normalize URLs using native parsing before fetching them, checking strictly against internal loopbacks, private networks, and cloud metadata IPs. Additionally, always set `redirect: 'error'` in fetch options to prevent attackers from using external servers to blindly redirect internal requests.
