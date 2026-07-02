@@ -16,6 +16,7 @@ import '../../utils/firestore_orders_sync.dart';
 import '../../utils/orders_cache_store.dart';
 import '../../utils/security_utils.dart';
 import '../../utils/search_history_store.dart';
+import '../../utils/app_optimizations.dart';
 import '../additional/feedback_screen.dart';
 import 'order_tracking_screen.dart';
 import '../../widgets/Cart/History_item.dart';
@@ -43,6 +44,8 @@ class _HistoryOrdersState extends State<HistoryOrders> {
   List<String> _archivedOrderIds = const <String>[];
   Map<String, dynamic> _collectedPhotos = const <String, dynamic>{};
   bool _showArchived = false;
+
+  final Debouncer _debouncer = Debouncer(milliseconds: 300);
 
   static const List<String> _sortModes = <String>[
     "newest",
@@ -113,6 +116,7 @@ class _HistoryOrdersState extends State<HistoryOrders> {
 
   @override
   void dispose() {
+    _debouncer.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -735,7 +739,9 @@ class _HistoryOrdersState extends State<HistoryOrders> {
             TextField(
               controller: _searchController,
               textInputAction: TextInputAction.search,
-              onChanged: (value) => setState(() => _query = value),
+              // Performance Optimization: Debounce search input to prevent main thread blocking
+              // and excessive UI rebuilds when filtering the large orders list.
+              onChanged: (value) => _debouncer.run(() => setState(() => _query = value)),
               onSubmitted: _rememberSearch,
               decoration: InputDecoration(
                 hintText: "Search history by order id, shop, or status",
@@ -744,6 +750,7 @@ class _HistoryOrdersState extends State<HistoryOrders> {
                     ? null
                     : IconButton(
                         onPressed: () {
+                          _debouncer.cancel();
                           _searchController.clear();
                           setState(() => _query = "");
                         },
