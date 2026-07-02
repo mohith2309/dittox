@@ -82,7 +82,37 @@ async function markProcessed(
   );
 }
 
+function isValidWebhookUrl(urlString: string): boolean {
+  try {
+    const url = new URL(urlString);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return false;
+
+    const hostname = url.hostname.toLowerCase();
+
+    // SSRF Protection: Block localhost, private IPs, and metadata endpoints
+    const blockedPatterns = [
+      /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/,
+      /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/,
+      /^192\.168\.\d{1,3}\.\d{1,3}$/,
+      /^172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}$/,
+      /^169\.254\.169\.254$/
+    ];
+
+    if (blockedPatterns.some((pattern) => pattern.test(hostname))) return false;
+    if (hostname === "localhost" || hostname === "[::1]" || hostname === "::1") return false;
+
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  // SSRF Protection: Validate the user-provided URL before making the outbound request
+  if (!isValidWebhookUrl(url)) {
+    throw new Error("Invalid or blocked webhook URL.");
+  }
+
   return fetch(url, {
     method: "POST",
     headers: {
