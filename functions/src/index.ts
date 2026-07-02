@@ -83,8 +83,30 @@ async function markProcessed(
 }
 
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  // 🛡️ Sentinel: SSRF Mitigation
+  // Parse URL to prevent obfuscation bypasses (like hex/octal encoded IPs)
+  const parsedUrl = new URL(url);
+  const hostname = parsedUrl.hostname.toLowerCase();
+
+  // Validate hostname against strict blocklists for private/internal IPs to prevent SSRF
+  const blockedRegexes = [
+    /^localhost$/,
+    /^\[::1\]$/,
+    /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/,
+    /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/,
+    /^192\.168\.\d{1,3}\.\d{1,3}$/,
+    /^172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}$/,
+    /^169\.254\.\d{1,3}\.\d{1,3}$/ // Cloud metadata IP block
+  ];
+
+  if (blockedRegexes.some((regex) => regex.test(hostname))) {
+    throw new Error("Invalid webhook URL: Target is a prohibited internal network.");
+  }
+
   return fetch(url, {
     method: "POST",
+    // 🛡️ Sentinel: Enforce error on redirects to prevent bypassing via HTTP redirects
+    redirect: "error",
     headers: {
       "content-type": "application/json",
       "user-agent": "dittox-firebase-functions",
