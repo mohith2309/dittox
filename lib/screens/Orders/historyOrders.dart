@@ -655,9 +655,18 @@ class _HistoryOrdersState extends State<HistoryOrders> {
             },
             icon: const Icon(Icons.notifications_active_rounded),
           ),
-          IconButton(icon: const Icon(Icons.refresh), onPressed: _fetchOrders),
+          // UX/A11y: Added tooltip to provide semantic labels for screen readers and visual hints for icon-only refresh button
           IconButton(
-              icon: const Icon(Icons.delete_outline), onPressed: _clearHistory),
+            tooltip: 'Refresh Orders',
+            icon: const Icon(Icons.refresh),
+            onPressed: _fetchOrders,
+          ),
+          // UX/A11y: Added tooltip to provide semantic labels for screen readers and visual hints for icon-only clear history button
+          IconButton(
+              tooltip: 'Clear History',
+              icon: const Icon(Icons.delete_outline),
+              onPressed: _clearHistory,
+          ),
         ],
       ),
       body: RefreshIndicator(
