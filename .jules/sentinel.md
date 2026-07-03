@@ -1,0 +1,4 @@
+## 2024-07-03 - [Critical SSRF in Webhook Delivery]
+**Vulnerability:** The `sendWebhook` function in Cloud Functions accepted arbitrary URLs and performed `fetch` without validating the destination, allowing Server-Side Request Forgery (SSRF) against internal networks, localhost, and cloud metadata APIs.
+**Learning:** Naive URL string matching (like `.startsWith('127.')`) is insufficient for SSRF protection because attackers can bypass it using URL obfuscation (e.g., octal `0177.0.0.1`, hex `0x7f000001`, or IPv6 mappings). Additionally, missing `redirect: "error"` allowed attackers to bypass checks via harmless-looking endpoints that returned 3xx redirects to internal IPs.
+**Prevention:** Always use native `URL` parsing to normalize URLs, apply strict regex matching for private IP ranges (IPv4 and IPv6), enforce HTTPS protocol, and explicitly set `redirect: "error"` on outbound fetch requests using user-controlled URLs.

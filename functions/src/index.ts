@@ -83,6 +83,30 @@ async function markProcessed(
 }
 
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  // SSRF Mitigation: Parse URL to leverage built-in normalization
+  let parsedUrl: URL;
+  try {
+    parsedUrl = new URL(url);
+  } catch (e) {
+    throw new Error("Invalid URL format");
+  }
+
+  // Prevent cleartext transmission and protocol smuggling
+  if (parsedUrl.protocol !== "https:") {
+    throw new Error("Only HTTPS webhooks are allowed");
+  }
+
+  // SSRF Mitigation: Block private IPs, localhost, and cloud metadata endpoints
+  // Uses strict regex to prevent obfuscation bypasses (e.g. hex/octal encoded IPs)
+  const isPrivateIp =
+    /^(localhost|127\.\d{1,3}\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|169\.254\.\d{1,3}\.\d{1,3}|\[::1\])$/i.test(
+      parsedUrl.hostname,
+    );
+
+  if (isPrivateIp || parsedUrl.hostname === "metadata.google.internal") {
+    throw new Error("Invalid webhook destination");
+  }
+
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +114,8 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    // SSRF Mitigation: Prevent attackers from bypassing checks via HTTP redirects
+    redirect: "error",
   });
 }
 
