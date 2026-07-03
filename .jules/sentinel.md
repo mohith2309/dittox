@@ -1,0 +1,4 @@
+## 2024-07-03 - SSRF Protection via URL parsing and redirect blocking
+**Vulnerability:** The application was vulnerable to Server-Side Request Forgery (SSRF) because the `sendWebhook` function blindly fetched URLs provided by users without validation or restricting internal networks.
+**Learning:** Preventing SSRF requires native `URL` parsing to handle host normalization and blocking obfuscation attempts (e.g., hex-encoded IPs, short IPs). Further, `redirect: 'error'` must be set on the `fetch` call because allowing redirects can bypass initial validation. However, be cautious as blocking redirects can break legitimate webhook destinations that rely on benign HTTP-to-HTTPS redirects.
+**Prevention:** Always use a comprehensive URL validation function (checking for localhost, internal IP blocks using strict regex, and IPV6 local addresses) *and* set `redirect: 'error'` on outbound user-configured webhook requests.
