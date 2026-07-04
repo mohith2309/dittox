@@ -1,0 +1,3 @@
+## 2024-05-24 - Avoid Synchronous setState in Textfield onChanged for List Filtering
+**Learning:** Using synchronous `setState` in `TextField`'s `onChanged` handler to filter large lists (like Order History or Shops) blocks the main UI thread during typing and causes jank, degrading perceived performance.
+**Action:** Always wrap these updates using the `Debouncer` class from `lib/utils/app_optimizations.dart`. Additionally, ensure to immediately cancel any pending debouncer timers (`_debouncer.cancel()`) before executing synchronous state updates (like clearing the search or selecting a recent search chip).
