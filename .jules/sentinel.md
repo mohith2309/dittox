@@ -1,0 +1,4 @@
+## 2024-07-04 - SSRF in Webhook Handler
+**Vulnerability:** The `sendWebhook` function was directly using user-provided URLs in `fetch` without validating the host, allowing Server-Side Request Forgery (SSRF) to internal infrastructure.
+**Learning:** Checking for internal IPs using string matching (like `.startsWith('127.')`) is insufficient as it blocks valid domains like `127.example.com` and doesn't handle obfuscated IPs (like `0x7f.0.0.1`). Native `URL` parsing is required to leverage built-in normalization, and 3xx redirects can bypass these checks if the fetch configuration doesn't enforce `redirect: 'error'`.
+**Prevention:** Always use the native `URL` object to parse and normalize URLs before validation. Use strict regexes for internal IPv4/IPv6 address matching on the `hostname`, and always explicitly set `redirect: 'error'` in `fetch` calls to prevent redirect-based SSRF bypasses.
