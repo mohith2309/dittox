@@ -83,6 +83,24 @@ async function markProcessed(
 }
 
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  // Prevent SSRF by validating the parsed URL hostname
+  const parsedUrl = new URL(url);
+  const hostname = parsedUrl.hostname.toLowerCase();
+
+  const isInternal =
+    /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+    /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+    /^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+    /^172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+    /^0\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+    hostname === "localhost" ||
+    hostname === "::1" ||
+    hostname.includes("[::1]");
+
+  if (isInternal) {
+    throw new Error("Invalid webhook URL: Internal IPs are not allowed.");
+  }
+
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +108,8 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    // Prevent SSRF via 3xx redirects to internal IPs
+    redirect: "error",
   });
 }
 
