@@ -21,6 +21,7 @@ import 'order_tracking_screen.dart';
 import '../../widgets/Cart/History_item.dart';
 import '../../widgets/Cart/no_items.dart';
 import '../../widgets/common/pill_appbar_title.dart';
+import '../../utils/app_optimizations.dart';
 
 class HistoryOrders extends StatefulWidget {
   static const routeName = "/historyOrders";
@@ -34,6 +35,7 @@ class HistoryOrders extends StatefulWidget {
 
 class _HistoryOrdersState extends State<HistoryOrders> {
   List<dynamic> _orders = [];
+  final Debouncer _debouncer = Debouncer(milliseconds: 300);
   bool isLoading = false;
   bool _isFetching = false;
   String _query = "";
@@ -113,6 +115,7 @@ class _HistoryOrdersState extends State<HistoryOrders> {
 
   @override
   void dispose() {
+    _debouncer.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -247,6 +250,7 @@ class _HistoryOrdersState extends State<HistoryOrders> {
               title: const Text("Search this store"),
               onTap: () {
                 Navigator.pop(context);
+                _debouncer.cancel();
                 _searchController.text = storeName;
                 setState(() => _query = storeName);
                 _rememberSearch(storeName);
@@ -735,7 +739,12 @@ class _HistoryOrdersState extends State<HistoryOrders> {
             TextField(
               controller: _searchController,
               textInputAction: TextInputAction.search,
-              onChanged: (value) => setState(() => _query = value),
+              // Performance optimization: Debounce search input to reduce synchronous setState blocking
+              onChanged: (value) {
+                _debouncer.run(() {
+                  setState(() => _query = value);
+                });
+              },
               onSubmitted: _rememberSearch,
               decoration: InputDecoration(
                 hintText: "Search history by order id, shop, or status",
@@ -744,6 +753,7 @@ class _HistoryOrdersState extends State<HistoryOrders> {
                     ? null
                     : IconButton(
                         onPressed: () {
+                          _debouncer.cancel();
                           _searchController.clear();
                           setState(() => _query = "");
                         },
@@ -767,6 +777,7 @@ class _HistoryOrdersState extends State<HistoryOrders> {
                       avatar: const Icon(Icons.history, size: 16),
                       label: Text(recent),
                       onPressed: () {
+                        _debouncer.cancel();
                         _searchController.text = recent;
                         setState(() => _query = recent);
                       },
