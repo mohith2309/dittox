@@ -443,6 +443,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                   suffixIcon: IconButton(
                                     onPressed: () => setState(
                                         () => isObsureText = !isObsureText),
+                                    // Accessibility: Tooltip provides semantic labels for icon-only buttons
+                                    tooltip: isObsureText ? "Show password" : "Hide password",
                                     icon: Icon(
                                       isObsureText
                                           ? Icons.visibility

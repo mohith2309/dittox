@@ -300,6 +300,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                       setState(() =>
                                           isObsecureText = !isObsecureText);
                                     },
+                                    // Accessibility: Tooltip provides semantic labels for icon-only buttons
+                                    tooltip: isObsecureText ? "Show password" : "Hide password",
                                     icon: Icon(
                                       isObsecureText
                                           ? Icons.visibility
