@@ -16,6 +16,7 @@ import '../../utils/firestore_orders_sync.dart';
 import '../../utils/orders_cache_store.dart';
 import '../../utils/security_utils.dart';
 import '../../utils/search_history_store.dart';
+import '../../utils/app_optimizations.dart';
 import '../additional/feedback_screen.dart';
 import 'order_tracking_screen.dart';
 import '../../widgets/Cart/History_item.dart';
@@ -39,6 +40,7 @@ class _HistoryOrdersState extends State<HistoryOrders> {
   String _query = "";
   String _sortMode = "newest";
   final TextEditingController _searchController = TextEditingController();
+  final Debouncer _debouncer = Debouncer(milliseconds: 300); // ⚡ Bolt: Prevent UI jank during filtering
   List<String> _recentSearches = const <String>[];
   List<String> _archivedOrderIds = const <String>[];
   Map<String, dynamic> _collectedPhotos = const <String, dynamic>{};
@@ -114,6 +116,7 @@ class _HistoryOrdersState extends State<HistoryOrders> {
   @override
   void dispose() {
     _searchController.dispose();
+    _debouncer.dispose();
     super.dispose();
   }
 
@@ -247,6 +250,7 @@ class _HistoryOrdersState extends State<HistoryOrders> {
               title: const Text("Search this store"),
               onTap: () {
                 Navigator.pop(context);
+                _debouncer.cancel(); // ⚡ Bolt: Cancel pending debouncer before explicit state change
                 _searchController.text = storeName;
                 setState(() => _query = storeName);
                 _rememberSearch(storeName);
@@ -735,7 +739,10 @@ class _HistoryOrdersState extends State<HistoryOrders> {
             TextField(
               controller: _searchController,
               textInputAction: TextInputAction.search,
-              onChanged: (value) => setState(() => _query = value),
+              onChanged: (value) {
+                // ⚡ Bolt: Debounce search to prevent UI jank during rapid typing
+                _debouncer.run(() => setState(() => _query = value));
+              },
               onSubmitted: _rememberSearch,
               decoration: InputDecoration(
                 hintText: "Search history by order id, shop, or status",
@@ -744,6 +751,7 @@ class _HistoryOrdersState extends State<HistoryOrders> {
                     ? null
                     : IconButton(
                         onPressed: () {
+                          _debouncer.cancel(); // ⚡ Bolt: Cancel pending debouncer before explicit state change
                           _searchController.clear();
                           setState(() => _query = "");
                         },
@@ -767,6 +775,7 @@ class _HistoryOrdersState extends State<HistoryOrders> {
                       avatar: const Icon(Icons.history, size: 16),
                       label: Text(recent),
                       onPressed: () {
+                        _debouncer.cancel(); // ⚡ Bolt: Cancel pending debouncer before explicit state change
                         _searchController.text = recent;
                         setState(() => _query = recent);
                       },

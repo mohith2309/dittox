@@ -1,0 +1,3 @@
+## 2026-07-05 - Debouncing synchronous state updates in large list views
+**Learning:** In Flutter, synchronous `setState()` calls inside `TextField` `onChanged` handlers that trigger the filtering of large lists block the main UI thread and cause severe jank during typing.
+**Action:** Always wrap these state updates using a `Debouncer` class (e.g., from `lib/utils/app_optimizations.dart`) and ensure explicit UI actions like 'clear search' buttons immediately cancel any pending debouncer timers (`_debouncer.cancel()`) before executing their synchronous state updates to prevent delayed overrides.
