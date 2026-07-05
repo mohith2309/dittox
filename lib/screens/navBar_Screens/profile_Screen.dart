@@ -494,8 +494,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   trailing: IconButton(
                     onPressed: _loadWallet,
-                    icon:
-                        const Icon(Icons.refresh, color: ColorPallets.deepBlue),
+                    // Accessibility: Add tooltip for screen readers
+                    tooltip: "Refresh wallet",
+                    icon: const Icon(Icons.refresh, color: ColorPallets.deepBlue),
                   ),
                 ),
               ),

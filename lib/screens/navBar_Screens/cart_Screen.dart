@@ -602,6 +602,8 @@ class _CartScreenState extends State<CartScreen> {
                                               _searchController.clear();
                                               setState(() => _query = "");
                                             },
+                                            // Accessibility: Add tooltip for screen readers
+                                            tooltip: "Clear search",
                                             icon: const Icon(Icons.clear),
                                           ),
                                     border: const OutlineInputBorder(),
