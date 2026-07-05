@@ -82,7 +82,40 @@ async function markProcessed(
   );
 }
 
+// Security Mitigation: SSRF Protection
+// Validate webhook URLs to prevent Server-Side Request Forgery (SSRF) attacks.
+// This blocks requests to internal/private IP addresses and cloud metadata endpoints.
+function isAllowedWebhookUrl(urlString: string): boolean {
+  try {
+    const parsedUrl = new URL(urlString);
+    const hostname = parsedUrl.hostname.toLowerCase();
+
+    if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") return false;
+
+    // Block metadata server
+    if (hostname === "metadata.google.internal" || hostname === "169.254.169.254") return false;
+
+    // Block loopback/localhost
+    if (/^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) || hostname === "[::1]" || hostname === "localhost") {
+      return false;
+    }
+
+    // Block private networks
+    if (/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname)) return false;
+    if (/^172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(hostname)) return false;
+    if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname)) return false;
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  if (!isAllowedWebhookUrl(url)) {
+    throw new Error(`SSRF Prevention: The webhook URL is not allowed.`);
+  }
+
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +123,8 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    // Security Mitigation: Enforce redirect: 'error' to prevent SSRF bypasses via 3xx redirects to internal IPs.
+    redirect: "error",
   });
 }
 
