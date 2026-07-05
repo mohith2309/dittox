@@ -66,14 +66,50 @@ async function markProcessed(ref, status, extra = {}) {
         updatedAt: firestore_1.FieldValue.serverTimestamp(),
     }, { merge: true });
 }
-async function sendWebhook(url, payload) {
-    return fetch(url, {
+async function sendWebhook(urlString, payload) {
+    // SECURITY: Prevent SSRF by validating the URL before fetching
+    let url;
+    try {
+        url = new URL(urlString);
+    }
+    catch (e) {
+        throw new Error("Invalid webhook URL format");
+    }
+    // SECURITY: Ensure protocol is HTTP or HTTPS
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+        throw new Error("Unsupported protocol for webhook");
+    }
+    const hostname = url.hostname.toLowerCase();
+    // SECURITY: Block access to Google Cloud metadata server and localhost
+    if (hostname === "169.254.169.254" ||
+        hostname === "metadata.google.internal" ||
+        hostname === "localhost") {
+        throw new Error("Access to internal hosts is blocked");
+    }
+    // SECURITY: Block IPv4 local and private ranges
+    // 127.0.0.0/8
+    if (/^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname)) {
+        throw new Error("Access to loopback IP is blocked");
+    }
+    // 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
+    if (/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+        /^172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+        /^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname)) {
+        throw new Error("Access to private IP ranges is blocked");
+    }
+    // SECURITY: Block IPv6 localhost
+    if (hostname === "[::1]") {
+        throw new Error("Access to loopback IPv6 is blocked");
+    }
+    return fetch(url.toString(), {
         method: "POST",
         headers: {
             "content-type": "application/json",
             "user-agent": "dittox-firebase-functions",
         },
         body: JSON.stringify(payload),
+        // SECURITY: Prevent SSRF via redirect to internal IPs
+        redirect: "error",
     });
 }
 exports.processNotificationIntent = (0, firestore_2.onDocumentCreated)(`${collections.notificationIntents}/{intentId}`, async (event) => {
