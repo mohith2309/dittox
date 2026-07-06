@@ -82,7 +82,28 @@ async function markProcessed(
   );
 }
 
+// Security enhancement: Validate webhook URL to prevent Server-Side Request Forgery (SSRF)
+// Blocks access to internal networks, localhost, and cloud metadata endpoints.
+function isSafeWebhookUrl(urlStr: string): boolean {
+  try {
+    const url = new URL(urlStr);
+    if (url.protocol !== "https:" && url.protocol !== "http:") return false;
+    const host = url.hostname.toLowerCase();
+    if (host === "metadata.google.internal" || host === "localhost" || host === "[::1]" || host === "::1") return false;
+    // Strict regexes to block IPv4 local/private ranges and Google metadata IP
+    if (/^(127\.\d{1,3}\.\d{1,3}\.\d{1,3}|169\.254\.169\.254|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3})$/.test(host)) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  // Security enhancement: Call isSafeWebhookUrl before executing fetch to mitigate SSRF
+  if (!isSafeWebhookUrl(url)) {
+    throw new Error(`Invalid or blocked webhook URL: ${url}`);
+  }
+
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +111,8 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    // Security enhancement: Prevent attackers from bypassing SSRF check via 3xx HTTP redirects
+    redirect: "error",
   });
 }
 
