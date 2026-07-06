@@ -82,9 +82,42 @@ async function markProcessed(
   );
 }
 
+// 🛡️ Sentinel: SSRF Protection
+// Validates URLs to prevent unauthorized access to internal network resources and metadata servers.
+function isSafeUrl(urlString: string): boolean {
+  try {
+    const parsed = new URL(urlString);
+    const host = parsed.hostname.toLowerCase();
+
+    // Block local and internal hostnames
+    if (host === "localhost" || host === "metadata.google.internal") return false;
+
+    // Block IPv4 loopback (127.0.0.0/8) and link-local (169.254.0.0/16) using strict regex
+    if (/^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host)) return false;
+    if (/^169\.254\.\d{1,3}\.\d{1,3}$/.test(host)) return false;
+
+    // Block IPv6 loopback
+    if (host === "[::1]" || host === "::1") return false;
+
+    // Block known GCP metadata IPs as a defense-in-depth measure
+    if (host === "169.254.169.254") return false;
+
+    return true;
+  } catch {
+    return false; // Reject malformed URLs
+  }
+}
+
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  // 🛡️ Sentinel: Enforce URL safety before fetching
+  if (!isSafeUrl(url)) {
+    throw new Error(`Blocked unsafe webhook URL: ${url}`);
+  }
+
   return fetch(url, {
     method: "POST",
+    // 🛡️ Sentinel: Prevent attackers from bypassing SSRF checks via 3xx redirects
+    redirect: "error",
     headers: {
       "content-type": "application/json",
       "user-agent": "dittox-firebase-functions",
