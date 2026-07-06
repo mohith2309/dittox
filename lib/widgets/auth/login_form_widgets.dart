@@ -82,6 +82,8 @@ class AuthTextFormField extends StatelessWidget {
                   ),
                 ),
                 child: IconButton(
+                  // Tooltip acts as an ARIA label equivalent for screen readers and provides helpful context on hover
+                  tooltip: isPassword ? (isObscure ? 'Show password' : 'Hide password') : 'Clear text',
                   color: ColorPallets.deepBlue,
                   onPressed: isPassword
                       ? onVisibilityToggle
