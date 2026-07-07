@@ -1195,10 +1195,14 @@ class _StoreModeScreenState extends State<StoreModeScreen> {
               );
             },
             icon: const Icon(Icons.logout),
+            // UX: Added tooltip for screen reader accessibility
+            tooltip: "Logout",
           ),
           IconButton(
             onPressed: () => _load(silent: true),
             icon: const Icon(Icons.refresh),
+            // UX: Added tooltip for screen reader accessibility
+            tooltip: "Refresh Orders",
           )
         ],
       ),
@@ -1239,6 +1243,8 @@ class _StoreModeScreenState extends State<StoreModeScreen> {
                         IconButton(
                           onPressed: () => setState(() => _loadError = ""),
                           icon: const Icon(Icons.close, size: 18),
+                          // UX: Added tooltip for screen reader accessibility
+                          tooltip: "Dismiss Error",
                         ),
                       ],
                     ),
@@ -1382,6 +1388,8 @@ class _StoreModeScreenState extends State<StoreModeScreen> {
                         : IconButton(
                             onPressed: () => setState(() => _orderQuery = ""),
                             icon: const Icon(Icons.clear),
+                            // UX: Added tooltip for screen reader accessibility
+                            tooltip: "Clear Search",
                           ),
                     border: const OutlineInputBorder(),
                     isDense: true,
