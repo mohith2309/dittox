@@ -1,0 +1,4 @@
+## 2025-02-28 - SSRF Vulnerability in Webhooks
+**Vulnerability:** The `sendWebhook` function was executing arbitrary URLs pulled from Firestore documents without verifying the safety of the endpoint, allowing Server-Side Request Forgery (SSRF) against internal resources and loopback addresses.
+**Learning:** In Google Cloud functions, SSRF can be uniquely dangerous due to the `metadata.google.internal` server (`169.254.169.254`) which can leak identity tokens if not explicitly blocked. In Node.js environments using `fetch()`, attackers can also bypass URL parsing/validation checks by configuring an external URL that returns a 3xx HTTP redirect to an internal IP.
+**Prevention:** Always parse webhook URLs to enforce http/https protocols and block requests to internal IPs/metadata ranges. Additionally, always explicitly configure `fetch()` with `redirect: "error"` to prevent malicious redirects to protected networks.
