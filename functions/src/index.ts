@@ -82,7 +82,28 @@ async function markProcessed(
   );
 }
 
+function isUrlSafe(urlString: string): boolean {
+  try {
+    const parsed = new URL(urlString);
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return false;
+    const host = parsed.hostname.toLowerCase();
+
+    // SSRF Mitigation: Block internal IP addresses and metadata servers
+    if (host === "localhost" || host === "[::1]" || host === "169.254.169.254" || host === "metadata.google.internal") return false;
+    if (/^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(host)) return false;
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  // SSRF Mitigation: Validate URL before making request
+  if (!isUrlSafe(url)) {
+    throw new Error(`Unsafe webhook URL blocked: ${url}`);
+  }
+
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +111,8 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    // SSRF Mitigation: Prevent attackers from bypassing checks via 3xx redirects to internal IPs
+    redirect: "error",
   });
 }
 
