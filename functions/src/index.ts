@@ -82,7 +82,39 @@ async function markProcessed(
   );
 }
 
+function isSafeUrl(urlString: string): boolean {
+  try {
+    const parsed = new URL(urlString);
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+      return false;
+    }
+    const hostname = parsed.hostname;
+    // 🛡️ Sentinel Mitigation: Prevent SSRF by blocking access to internal IPs, loopback,
+    // and GCP metadata servers (169.254.169.254 and metadata.google.internal)
+    if (
+      hostname === "localhost" ||
+      hostname === "metadata.google.internal" ||
+      /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+      /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+      /^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+      /^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+      /^169\.254\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+      /^\[::1\]$/.test(hostname) ||
+      hostname.endsWith(".internal")
+    ) {
+      return false;
+    }
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  // 🛡️ Sentinel Mitigation: Validate URL before fetching to prevent SSRF attacks
+  if (!isSafeUrl(url)) {
+    throw new Error("Invalid or insecure webhook URL");
+  }
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +122,9 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    // 🛡️ Sentinel Mitigation: Enforce redirect: "error" to prevent attackers from bypassing
+    // SSRF checks via 3xx redirects to internal IPs or metadata servers.
+    redirect: "error",
   });
 }
 
