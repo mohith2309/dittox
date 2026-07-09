@@ -83,6 +83,19 @@ async function markProcessed(
 }
 
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  // SSRF Protection: Parse URL and extract hostname for validation
+  const parsedUrl = new URL(url);
+  const hostname = parsedUrl.hostname;
+
+  // SSRF Protection: Block internal and loopback IP addresses/domains
+  const isLocalhost = hostname === "localhost" || hostname === "::1" || hostname === "[::1]";
+  const isIpv4Loopback = /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname);
+  const isGcpMetadata = hostname === "169.254.169.254" || hostname === "metadata.google.internal" || hostname.endsWith(".internal");
+
+  if (isLocalhost || isIpv4Loopback || isGcpMetadata) {
+    throw new Error("Invalid webhook URL: Target address is not allowed");
+  }
+
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +103,8 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    // SSRF Protection: Prevent bypassing checks via 3xx redirects
+    redirect: "error",
   });
 }
 

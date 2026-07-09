@@ -1,0 +1,4 @@
+## 2024-05-18 - Prevent SSRF in webhooks
+**Vulnerability:** The webhook sender (`sendWebhook` in `functions/src/index.ts`) was making a raw `fetch` to untrusted user-controlled URLs without validation.
+**Learning:** This exposes the application to Server-Side Request Forgery (SSRF), allowing attackers to reach internal GCP metadata endpoints (like `169.254.169.254`) or internal network services.
+**Prevention:** Always parse URLs (`new URL()`) to extract hostnames, explicitly block internal IP ranges/domains (e.g., loopback IPs, `.internal` TLDs), and enforce `redirect: 'error'` in `fetch` to prevent bypasses via 3xx redirects to internal addresses.
