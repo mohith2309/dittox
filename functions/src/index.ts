@@ -82,14 +82,37 @@ async function markProcessed(
   );
 }
 
-async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
-  return fetch(url, {
+async function sendWebhook(urlStr: string, payload: FirestoreData): Promise<Response> {
+  // SECURITY: Prevent SSRF by validating the target URL
+  const url = new URL(urlStr);
+  const hostname = url.hostname.toLowerCase();
+
+  // SECURITY: Block local/internal IPs, localhost, and metadata servers
+  const isBlocked =
+    hostname === "169.254.169.254" || // AWS/GCP metadata
+    hostname === "metadata.google.internal" || // GCP metadata
+    hostname === "localhost" ||
+    hostname === "[::1]" ||
+    hostname.endsWith(".internal") ||
+    /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) || // 127.0.0.0/8
+    /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||  // 10.0.0.0/8
+    /^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname) ||     // 192.168.0.0/16
+    /^172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(hostname); // 172.16.0.0/12
+
+  if (isBlocked) {
+    throw new Error("Blocked internal URL");
+  }
+
+  return fetch(url.toString(), {
     method: "POST",
     headers: {
       "content-type": "application/json",
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    // SECURITY: Disable redirects to prevent attackers bypassing the SSRF check
+    // by using an external URL that redirects to an internal one via 3xx response.
+    redirect: "error",
   });
 }
 

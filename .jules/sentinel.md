@@ -1,0 +1,4 @@
+## 2024-05-24 - SSRF Vulnerability in Webhook Sender
+**Vulnerability:** The `sendWebhook` function was fetching user-provided URLs without validating the host, allowing Server-Side Request Forgery (SSRF). Attackers could use this to probe internal networks or access sensitive metadata servers.
+**Learning:** Cloud functions that make HTTP requests to dynamic, user-controlled URLs must rigorously validate the target hostname and protocol to prevent accessing internal resources. Also, redirects must be disabled (`redirect: 'error'`) to prevent bypasses where an external URL redirects to an internal one.
+**Prevention:** Always parse the URL, check against a denylist of internal IP ranges and hostnames (including metadata servers like `169.254.169.254`), and disable HTTP redirects on the fetch call.
