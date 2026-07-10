@@ -154,6 +154,8 @@ class _PriceCalculatorState extends State<PriceCalculator> {
         children: [
           Expanded(child: Text(label)),
           IconButton(
+            // Adding tooltip for better accessibility
+            tooltip: 'Decrease $label',
             icon: const Icon(Icons.remove_circle_outline),
             onPressed: value > 1 ? () => onChanged(value - 1) : null,
           ),
@@ -166,6 +168,8 @@ class _PriceCalculatorState extends State<PriceCalculator> {
             ),
           ),
           IconButton(
+            // Adding tooltip for better accessibility
+            tooltip: 'Increase $label',
             icon: const Icon(Icons.add_circle_outline),
             onPressed: () => onChanged(value + 1),
           ),
