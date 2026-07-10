@@ -19,6 +19,7 @@ import '../../utils/search_history_store.dart';
 import '../additional/feedback_screen.dart';
 import 'order_tracking_screen.dart';
 import '../../widgets/Cart/History_item.dart';
+import '../../utils/app_optimizations.dart';
 import '../../widgets/Cart/no_items.dart';
 import '../../widgets/common/pill_appbar_title.dart';
 
@@ -38,6 +39,7 @@ class _HistoryOrdersState extends State<HistoryOrders> {
   bool _isFetching = false;
   String _query = "";
   String _sortMode = "newest";
+  late final Debouncer _debouncer;
   final TextEditingController _searchController = TextEditingController();
   List<String> _recentSearches = const <String>[];
   List<String> _archivedOrderIds = const <String>[];
@@ -106,6 +108,7 @@ class _HistoryOrdersState extends State<HistoryOrders> {
   @override
   void initState() {
     super.initState();
+    _debouncer = Debouncer(milliseconds: 300);
     _loadSearchHistory();
     _loadHistoryExtras();
     _loadOrders();
@@ -113,6 +116,7 @@ class _HistoryOrdersState extends State<HistoryOrders> {
 
   @override
   void dispose() {
+    _debouncer.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -735,7 +739,12 @@ class _HistoryOrdersState extends State<HistoryOrders> {
             TextField(
               controller: _searchController,
               textInputAction: TextInputAction.search,
-              onChanged: (value) => setState(() => _query = value),
+              // Added Debouncer to prevent jank when filtering orders list
+              onChanged: (value) => _debouncer.run(() {
+                if (mounted) {
+                  setState(() => _query = value);
+                }
+              }),
               onSubmitted: _rememberSearch,
               decoration: InputDecoration(
                 hintText: "Search history by order id, shop, or status",
