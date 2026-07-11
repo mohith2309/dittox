@@ -1,0 +1,4 @@
+## 2024-05-15 - SSRF in Webhook Outbox
+**Vulnerability:** The `processWebhookOutbox` cloud function read arbitrary URLs from Firestore and passed them directly to `fetch()` without validation, creating a Server-Side Request Forgery (SSRF) vulnerability.
+**Learning:** Outbox patterns that fetch user-supplied URLs must perform strict validation. Attackers could have specified `metadata.google.internal` or loopback addresses to access internal GCP services.
+**Prevention:** Always parse URLs using `new URL()` to normalize them, validate hostnames against private IP regexes, block `.internal` TLDs, and use `redirect: 'error'` on `fetch` calls to prevent bypasses via 3xx redirects.
