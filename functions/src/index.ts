@@ -82,14 +82,33 @@ async function markProcessed(
   );
 }
 
-async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
-  return fetch(url, {
+async function sendWebhook(urlString: string, payload: FirestoreData): Promise<Response> {
+  const url = new URL(urlString);
+  const hostname = url.hostname;
+
+  // SSRF Protection: Parse URL to normalize it, and block access to internal/private IPs and metadata servers
+  if (
+    hostname === "localhost" ||
+    hostname === "169.254.169.254" ||
+    hostname === "metadata.google.internal" ||
+    hostname.endsWith(".internal") ||
+    /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+    /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+    /^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+    /^172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+    hostname === "[::1]"
+  ) {
+    throw new Error("SSRF Protection: Invalid target host");
+  }
+
+  return fetch(url.toString(), {
     method: "POST",
     headers: {
       "content-type": "application/json",
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    redirect: "error", // SSRF Protection: Prevent bypass via HTTP redirects
   });
 }
 
