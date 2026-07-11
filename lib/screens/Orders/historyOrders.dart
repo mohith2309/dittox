@@ -21,6 +21,7 @@ import 'order_tracking_screen.dart';
 import '../../widgets/Cart/History_item.dart';
 import '../../widgets/Cart/no_items.dart';
 import '../../widgets/common/pill_appbar_title.dart';
+import '../../utils/app_optimizations.dart';
 
 class HistoryOrders extends StatefulWidget {
   static const routeName = "/historyOrders";
@@ -39,6 +40,7 @@ class _HistoryOrdersState extends State<HistoryOrders> {
   String _query = "";
   String _sortMode = "newest";
   final TextEditingController _searchController = TextEditingController();
+  final Debouncer _debouncer = Debouncer(milliseconds: 300);
   List<String> _recentSearches = const <String>[];
   List<String> _archivedOrderIds = const <String>[];
   Map<String, dynamic> _collectedPhotos = const <String, dynamic>{};
@@ -114,6 +116,7 @@ class _HistoryOrdersState extends State<HistoryOrders> {
   @override
   void dispose() {
     _searchController.dispose();
+    _debouncer.dispose();
     super.dispose();
   }
 
@@ -735,7 +738,12 @@ class _HistoryOrdersState extends State<HistoryOrders> {
             TextField(
               controller: _searchController,
               textInputAction: TextInputAction.search,
-              onChanged: (value) => setState(() => _query = value),
+              onChanged: (value) {
+                // Optimize: Debounce search to prevent jank
+                _debouncer.run(() {
+                  if (mounted) setState(() => _query = value);
+                });
+              },
               onSubmitted: _rememberSearch,
               decoration: InputDecoration(
                 hintText: "Search history by order id, shop, or status",
