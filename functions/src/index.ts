@@ -82,7 +82,40 @@ async function markProcessed(
   );
 }
 
+// Security: Mitigate Server-Side Request Forgery (SSRF) by validating webhook URLs
+// Block internal IP ranges, GCP metadata server, and non-HTTP protocols.
+function isSafeWebhookUrl(urlStr: string): boolean {
+  try {
+    const parsedUrl = new URL(urlStr);
+    const hostname = parsedUrl.hostname;
+
+    if (hostname === "metadata.google.internal" || hostname.endsWith(".internal")) {
+      return false;
+    }
+
+    const isLocalhost = /^localhost$/i.test(hostname) || /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) || hostname === "[::1]";
+    const isMetadata = /^169\.254\.169\.254$/.test(hostname);
+    const isPrivateIPv4 = /^(10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})$/.test(hostname);
+
+    if (isLocalhost || isMetadata || isPrivateIPv4) {
+      return false;
+    }
+
+    if (parsedUrl.protocol !== "http:" && parsedUrl.protocol !== "https:") {
+      return false;
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  // Security: Prevent SSRF by validating the URL before fetching.
+  if (!isSafeWebhookUrl(url)) {
+    throw new Error("Invalid or blocked webhook URL");
+  }
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +123,8 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    // Security: Prevent SSRF via 3xx redirects to internal IP addresses
+    redirect: "error",
   });
 }
 
