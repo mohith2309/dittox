@@ -296,6 +296,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 decoration:
                                     _glassInputDecoration("Password").copyWith(
                                   suffixIcon: IconButton(
+                                    // 🎨 Palette: Accessibility improvement.
+                                    // Dynamic tooltip provides context for screen readers and mouse hover.
+                                    tooltip: isObsecureText ? 'Show password' : 'Hide password',
                                     onPressed: () {
                                       setState(() =>
                                           isObsecureText = !isObsecureText);
