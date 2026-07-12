@@ -17,6 +17,7 @@ import '../../utils/orders_cache_store.dart';
 import '../../utils/security_utils.dart';
 import '../../utils/search_history_store.dart';
 import '../additional/feedback_screen.dart';
+import '../../utils/app_optimizations.dart';
 import 'order_tracking_screen.dart';
 import '../../widgets/Cart/History_item.dart';
 import '../../widgets/Cart/no_items.dart';
@@ -43,6 +44,7 @@ class _HistoryOrdersState extends State<HistoryOrders> {
   List<String> _archivedOrderIds = const <String>[];
   Map<String, dynamic> _collectedPhotos = const <String, dynamic>{};
   bool _showArchived = false;
+  final Debouncer _debouncer = Debouncer(milliseconds: 300);
 
   static const List<String> _sortModes = <String>[
     "newest",
@@ -114,6 +116,7 @@ class _HistoryOrdersState extends State<HistoryOrders> {
   @override
   void dispose() {
     _searchController.dispose();
+    _debouncer.dispose();
     super.dispose();
   }
 
@@ -735,7 +738,12 @@ class _HistoryOrdersState extends State<HistoryOrders> {
             TextField(
               controller: _searchController,
               textInputAction: TextInputAction.search,
-              onChanged: (value) => setState(() => _query = value),
+              // Optimization: Debounce search input to prevent main thread jank and unnecessary UI rebuilds during rapid typing.
+              onChanged: (value) => _debouncer.run(() {
+                if (mounted) {
+                  setState(() => _query = value);
+                }
+              }),
               onSubmitted: _rememberSearch,
               decoration: InputDecoration(
                 hintText: "Search history by order id, shop, or status",
