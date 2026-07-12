@@ -16,6 +16,7 @@ import '../../providers/seletedShop.dart';
 import '../../utils/color_pallets_extended.dart';
 import '../../utils/demo_data.dart';
 import '../../utils/firestore_shop_service.dart';
+import '../../utils/app_optimizations.dart';
 import '../../utils/favorite_stores_store.dart';
 import '../../utils/store_auth_store.dart';
 import '../../widgets/common/pill_appbar_title.dart';
@@ -45,6 +46,7 @@ class _SelectShopsState extends State<SelectShops> {
   double _maxPrice = 1000;
   final List<String> _recentSearches = <String>[];
   Set<String> _favoriteStoreIds = const <String>{};
+  final Debouncer _debouncer = Debouncer(milliseconds: 300);
 
   static const CameraPosition _bangalorePosition = CameraPosition(
     target: LatLng(12.9716, 77.5946),
@@ -64,6 +66,7 @@ class _SelectShopsState extends State<SelectShops> {
   @override
   void dispose() {
     _shopSearchController.dispose();
+    _debouncer.dispose();
     super.dispose();
   }
 
@@ -335,7 +338,12 @@ class _SelectShopsState extends State<SelectShops> {
                   borderRadius: BorderRadius.circular(12),
                   child: TextField(
                     controller: _shopSearchController,
-                    onChanged: (value) => setState(() => _shopQuery = value),
+                    // Optimization: Debounce search input to prevent main thread jank and unnecessary UI rebuilds during rapid typing.
+                    onChanged: (value) => _debouncer.run(() {
+                      if (mounted) {
+                        setState(() => _shopQuery = value);
+                      }
+                    }),
                     onSubmitted: _rememberSearch,
                     decoration: InputDecoration(
                       hintText: "Search shop name, service, or area",

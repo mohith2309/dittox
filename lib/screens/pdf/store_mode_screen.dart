@@ -21,6 +21,8 @@ import '../../utils/printer_service.dart';
 import '../../utils/operational_order_service.dart';
 import '../../widgets/store/printer_selection_sheet.dart';
 
+import '../../utils/app_optimizations.dart';
+
 import 'store_login_screen.dart';
 import 'shop_auto_mode_screen.dart';
 import 'print_queue_screen.dart';
@@ -48,6 +50,7 @@ class _StoreModeScreenState extends State<StoreModeScreen> {
   String _storeName = "";
   int _autoRefreshSeconds = 15;
   String _sortBy = "newest";
+  final Debouncer _debouncer = Debouncer(milliseconds: 300);
 
   static const List<String> _filters = <String>[
     "all",
@@ -106,6 +109,7 @@ class _StoreModeScreenState extends State<StoreModeScreen> {
   @override
   void dispose() {
     _autoRefreshTimer?.cancel();
+    _debouncer.dispose();
     super.dispose();
   }
 
@@ -1373,7 +1377,12 @@ class _StoreModeScreenState extends State<StoreModeScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 child: TextField(
-                  onChanged: (value) => setState(() => _orderQuery = value),
+                  // Optimization: Debounce search input to prevent main thread jank and unnecessary UI rebuilds during rapid typing.
+                  onChanged: (value) => _debouncer.run(() {
+                    if (mounted) {
+                      setState(() => _orderQuery = value);
+                    }
+                  }),
                   decoration: InputDecoration(
                     hintText: "Search order id or status",
                     prefixIcon: const Icon(Icons.search),
