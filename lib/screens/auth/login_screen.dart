@@ -441,6 +441,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                   ),
                                   suffixIcon: IconButton(
+                                    // 🎨 Palette: Accessibility improvement.
+                                    // Dynamic tooltip provides context for screen readers and mouse hover.
+                                    tooltip: isObsureText ? 'Show password' : 'Hide password',
                                     onPressed: () => setState(
                                         () => isObsureText = !isObsureText),
                                     icon: Icon(
