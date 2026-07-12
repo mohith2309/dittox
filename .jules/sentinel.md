@@ -1,0 +1,4 @@
+## 2024-05-24 - SSRF in Firebase Webhooks
+**Vulnerability:** The `sendWebhook` function passed user-provided URLs directly to `fetch()` without validation, enabling Server-Side Request Forgery (SSRF) against internal metadata servers and private IP ranges.
+**Learning:** Firebase environments lack default egress filtering. Validating hostnames prevents basic SSRF, but attackers can still bypass it using 3xx HTTP redirects to internal IPs if `redirect: 'error'` is not enforced. Node's `new URL()` must be used to properly parse and normalize IPs before hostname validation.
+**Prevention:** Always enforce `redirect: 'error'` on `fetch()` calls handling external URLs, use `new URL()` for parsing, and strictly match against exact internal domains/metadata IPs or full IPv4 regex structures rather than using broad `.includes()` or `.startsWith()` matches.
