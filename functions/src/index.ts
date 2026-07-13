@@ -83,6 +83,28 @@ async function markProcessed(
 }
 
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  // [SSRF Prevention] Parse URL to normalize and check hostname
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch (e) {
+    throw new Error("Invalid URL for webhook");
+  }
+
+  const hostname = parsed.hostname;
+
+  // [SSRF Prevention] Block localhost and metadata servers
+  const isLocalhostIPv4 = /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname);
+  const isLocalhostIPv6 = hostname === "[::1]";
+  const isLocalhostName = hostname === "localhost";
+  const isMetadataIPv4 = hostname === "169.254.169.254";
+  const isMetadataName = hostname === "metadata.google.internal";
+  const isInternalTLD = hostname.endsWith(".internal");
+
+  if (isLocalhostIPv4 || isLocalhostIPv6 || isLocalhostName || isMetadataIPv4 || isMetadataName || isInternalTLD) {
+    throw new Error("Blocked internal hostname for webhook");
+  }
+
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +112,7 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    redirect: "error", // [SSRF Prevention] Prevent redirect bypasses
   });
 }
 
