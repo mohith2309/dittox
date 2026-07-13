@@ -82,7 +82,28 @@ async function markProcessed(
   );
 }
 
+function isSafeUrl(urlString: string): boolean {
+  try {
+    const url = new URL(urlString);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return false;
+    const hn = url.hostname;
+    if (hn === "localhost" || hn === "[::1]" || /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hn)) return false;
+    if (hn === "metadata.google.internal" || hn === "169.254.169.254") return false;
+    if (/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hn) || /^192\.168\.\d{1,3}\.\d{1,3}$/.test(hn)) return false;
+    if (/^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(hn)) return false;
+    if (hn.endsWith(".internal")) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Added SSRF protection to block access to internal metadata servers and private IPs,
+// and set redirect: "error" to prevent attackers from bypassing checks via 3xx redirects.
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  if (!isSafeUrl(url)) {
+    throw new Error("Invalid or unsafe webhook URL");
+  }
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +111,7 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    redirect: "error",
   });
 }
 
