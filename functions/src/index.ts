@@ -82,14 +82,38 @@ async function markProcessed(
   );
 }
 
-async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
-  return fetch(url, {
+async function sendWebhook(urlString: string, payload: FirestoreData): Promise<Response> {
+  let url: URL;
+  try {
+    url = new URL(urlString);
+  } catch (e) {
+    throw new Error("Invalid URL");
+  }
+
+  // 🛡️ Sentinel: Prevent SSRF by restricting protocols and blocking internal/metadata hosts
+  const hostname = url.hostname.toLowerCase();
+  if (url.protocol !== "https:" && url.protocol !== "http:") {
+    throw new Error("Unsupported protocol");
+  }
+  if (
+    hostname === "169.254.169.254" ||
+    hostname === "metadata.google.internal" ||
+    hostname.endsWith(".internal") ||
+    hostname === "localhost" ||
+    /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+    hostname === "[::1]"
+  ) {
+    throw new Error("Blocked internal hostname");
+  }
+
+  return fetch(urlString, {
     method: "POST",
     headers: {
       "content-type": "application/json",
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    redirect: "error", // Prevent redirect to internal IPs
   });
 }
 
