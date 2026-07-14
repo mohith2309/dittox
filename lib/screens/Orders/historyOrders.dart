@@ -16,6 +16,7 @@ import '../../utils/firestore_orders_sync.dart';
 import '../../utils/orders_cache_store.dart';
 import '../../utils/security_utils.dart';
 import '../../utils/search_history_store.dart';
+import '../../utils/app_optimizations.dart';
 import '../additional/feedback_screen.dart';
 import 'order_tracking_screen.dart';
 import '../../widgets/Cart/History_item.dart';
@@ -33,6 +34,7 @@ class HistoryOrders extends StatefulWidget {
 }
 
 class _HistoryOrdersState extends State<HistoryOrders> {
+  final Debouncer _debouncer = Debouncer(milliseconds: 300);
   List<dynamic> _orders = [];
   bool isLoading = false;
   bool _isFetching = false;
@@ -113,6 +115,7 @@ class _HistoryOrdersState extends State<HistoryOrders> {
 
   @override
   void dispose() {
+    _debouncer.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -735,7 +738,14 @@ class _HistoryOrdersState extends State<HistoryOrders> {
             TextField(
               controller: _searchController,
               textInputAction: TextInputAction.search,
-              onChanged: (value) => setState(() => _query = value),
+              onChanged: (value) {
+                // ⚡ Bolt: Added debouncing to prevent UI jank while filtering large lists
+                _debouncer.run(() {
+                  if (mounted) {
+                    setState(() => _query = value);
+                  }
+                });
+              },
               onSubmitted: _rememberSearch,
               decoration: InputDecoration(
                 hintText: "Search history by order id, shop, or status",

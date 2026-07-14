@@ -1,0 +1,3 @@
+## 2024-07-14 - Prevent Main Thread Blocking in Flutter TextFields
+**Learning:** Synchronous `setState()` calls inside `TextField` `onChanged` handlers that trigger filtering of large lists (e.g., Order History, Select Shops) block the main UI thread and cause jank.
+**Action:** Always wrap these updates using the `Debouncer` class from `lib/utils/app_optimizations.dart`, and ensure you call `_debouncer.dispose()` in the widget's `dispose()` method to prevent memory leaks. Also, check `if (mounted)` before `setState()`.
