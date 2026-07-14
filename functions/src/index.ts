@@ -83,6 +83,19 @@ async function markProcessed(
 }
 
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  // SSRF Protection: Parse URL to normalize and validate hostname against internal/local IPs
+  const parsedUrl = new URL(url);
+  const hostname = parsedUrl.hostname;
+
+  // Block metadata servers and internal IPs/domains to mitigate SSRF
+  const isLocalhost = /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) || hostname === "localhost" || hostname === "[::1]";
+  const isMetadataIp = hostname === "169.254.169.254";
+  const isInternal = hostname === "metadata.google.internal" || hostname.endsWith(".internal");
+
+  if (isLocalhost || isMetadataIp || isInternal) {
+    throw new Error("Invalid webhook URL: internal destinations are not allowed");
+  }
+
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +103,7 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    redirect: "error", // Prevent bypass via 3xx redirects to internal IPs
   });
 }
 
