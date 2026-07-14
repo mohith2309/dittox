@@ -18,6 +18,7 @@ import '../../utils/demo_data.dart';
 import '../../utils/firestore_shop_service.dart';
 import '../../utils/favorite_stores_store.dart';
 import '../../utils/store_auth_store.dart';
+import '../../utils/app_optimizations.dart';
 import '../../widgets/common/pill_appbar_title.dart';
 import '../checkout/checkout_screen.dart';
 
@@ -32,6 +33,7 @@ class SelectShops extends StatefulWidget {
 }
 
 class _SelectShopsState extends State<SelectShops> {
+  final Debouncer _debouncer = Debouncer(milliseconds: 300);
   late final Completer<GoogleMapController> _controller;
   final CarouselSliderController _carouselController =
       CarouselSliderController();
@@ -63,6 +65,7 @@ class _SelectShopsState extends State<SelectShops> {
 
   @override
   void dispose() {
+    _debouncer.dispose();
     _shopSearchController.dispose();
     super.dispose();
   }
@@ -335,7 +338,14 @@ class _SelectShopsState extends State<SelectShops> {
                   borderRadius: BorderRadius.circular(12),
                   child: TextField(
                     controller: _shopSearchController,
-                    onChanged: (value) => setState(() => _shopQuery = value),
+                    onChanged: (value) {
+                      // ⚡ Bolt: Added debouncing to prevent main thread blocking during fast typing
+                      _debouncer.run(() {
+                        if (mounted) {
+                          setState(() => _shopQuery = value);
+                        }
+                      });
+                    },
                     onSubmitted: _rememberSearch,
                     decoration: InputDecoration(
                       hintText: "Search shop name, service, or area",
