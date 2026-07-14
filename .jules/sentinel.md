@@ -1,0 +1,4 @@
+## 2024-07-14 - Fix SSRF in Webhook Sender
+**Vulnerability:** Unrestricted URL input to `fetch()` allowed Server-Side Request Forgery (SSRF) bypassing firewall restrictions.
+**Learning:** Using basic string matching for hostnames can lead to false positives/negatives. URLs must be parsed using the native `URL` class to normalize encoded IPs, and `fetch` must include `redirect: 'error'` to prevent redirect-based SSRF bypasses. Cloud metadata servers (e.g., `169.254.169.254`) must be explicitly blocked.
+**Prevention:** Always validate webhook URLs against strict regexes for IPv4, explicitly block metadata servers/internal domains, and prevent automatic redirects in the HTTP client.
