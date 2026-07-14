@@ -1,0 +1,4 @@
+## 2024-07-14 - Fix SSRF Vulnerability in Webhook Dispatch
+**Vulnerability:** The `sendWebhook` function in Cloud Functions accepted arbitrary URLs and fetched them directly without validating the hostname, protocols, or preventing redirects. This created an SSRF (Server-Side Request Forgery) vulnerability allowing attackers to access internal Google Cloud metadata (e.g., `169.254.169.254`) or internal services.
+**Learning:** Using `fetch` with user-supplied URLs without restricting hostnames and disabling redirects allows SSRF bypasses via 3xx redirects or malicious internal domains. The native `URL` class must be used to accurately parse and normalize the hostname.
+**Prevention:** Always validate hostnames against an explicit deny-list (including `metadata.google.internal` and IPv4 regexes like `^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$`), restrict protocols to HTTP/HTTPS, and enforce `redirect: 'error'` on `fetch` calls.
