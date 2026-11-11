@@ -91,6 +91,10 @@ class AuthTextFormField extends StatelessWidget {
                           isObscure ? Icons.visibility : Icons.visibility_off,
                           size: iconSize)
                       : FaIcon(FontAwesomeIcons.xmark, size: iconSize),
+                  // Added dynamic tooltips for screen reader accessibility
+                  tooltip: isPassword
+                      ? (isObscure ? 'Show password' : 'Hide password')
+                      : 'Clear text',
                 ),
               ),
         focusColor: ColorPallets.deepBlue,
