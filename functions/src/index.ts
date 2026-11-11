@@ -82,9 +82,52 @@ async function markProcessed(
   );
 }
 
+function isSafeUrl(urlString: string): boolean {
+  try {
+    const url = new URL(urlString);
+    // Block non-HTTP protocols
+    if (url.protocol !== "https:" && url.protocol !== "http:") return false;
+
+    const hostname = url.hostname;
+    // Block internal GCP metadata server and .internal TLDs
+    if (hostname === "169.254.169.254" || hostname === "metadata.google.internal" || hostname.endsWith(".internal")) {
+      return false;
+    }
+
+    // Block localhost/loopback
+    if (/^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) || hostname === "localhost") {
+      return false;
+    }
+
+    // Block IPv6 loopback
+    if (hostname === "[::1]" || hostname === "[0:0:0:0:0:0:0:1]") {
+      return false;
+    }
+
+    // Block internal IP ranges (10.x.x.x, 192.168.x.x, 172.16.x.x - 172.31.x.x)
+    if (/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname)) return false;
+    if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname)) return false;
+    const match172 = hostname.match(/^172\.(\d{1,3})\.\d{1,3}\.\d{1,3}$/);
+    if (match172) {
+      const secondOctet = parseInt(match172[1], 10);
+      if (secondOctet >= 16 && secondOctet <= 31) return false;
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  // Validate URL to prevent SSRF vulnerabilities
+  if (!isSafeUrl(url)) {
+    throw new Error("Invalid or restricted URL");
+  }
   return fetch(url, {
     method: "POST",
+    // Prevent SSRF bypasses via 3xx redirects to internal IPs
+    redirect: "error",
     headers: {
       "content-type": "application/json",
       "user-agent": "dittox-firebase-functions",
