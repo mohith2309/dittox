@@ -83,6 +83,25 @@ async function markProcessed(
 }
 
 async function sendWebhook(url: string, payload: FirestoreData): Promise<Response> {
+  const parsedUrl = new URL(url);
+  const hostname = parsedUrl.hostname;
+
+  // Mitigate Server-Side Request Forgery (SSRF) by blocking internal network ranges,
+  // localhost, and Google Cloud metadata servers to prevent internal network scanning.
+  if (
+    hostname === "169.254.169.254" ||
+    hostname === "metadata.google.internal" ||
+    hostname === "localhost" ||
+    /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+    /^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+    /^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+    /^172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}$/.test(hostname) ||
+    hostname === "[::1]" ||
+    hostname.endsWith(".internal")
+  ) {
+    throw new Error("Invalid webhook URL: internal hostnames are blocked.");
+  }
+
   return fetch(url, {
     method: "POST",
     headers: {
@@ -90,6 +109,8 @@ async function sendWebhook(url: string, payload: FirestoreData): Promise<Respons
       "user-agent": "dittox-firebase-functions",
     },
     body: JSON.stringify(payload),
+    // Disable redirects to prevent SSRF bypasses via 3xx redirects to internal IPs
+    redirect: "error",
   });
 }
 
